@@ -1,0 +1,36 @@
+spring:
+  application:
+    name: skillnest
+
+  # Database Configuration
+  datasource:
+    url: jdbc:postgresql://localhost:5440/postgres?currentSchema=skillnest&options=-c%20TimeZone=Asia/Ho_Chi_Minh
+    username: admin
+    password: se184190
+    driver-class-name: org.postgresql.Driver
+
+  # JPA Configuration
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        default_schema: skillnest
+
+# JWT Configuration
+jwt:
+  secret: skillnest-super-secret-key-for-jwt-token-generation-minimum-256-bits
+  expiration: 86400000
+
+# Server Configuration
+server:
+  port: 8080
+
+# Logging
+logging:
+  level:
+    com.exe202.skillnest: DEBUG
+    org.springframework.security: DEBUG
