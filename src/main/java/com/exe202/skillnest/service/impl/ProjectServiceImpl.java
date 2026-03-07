@@ -15,6 +15,7 @@ import com.exe202.skillnest.payloads.request.UpdateProjectRequest;
 import com.exe202.skillnest.repository.CompanyInfoRepository;
 import com.exe202.skillnest.repository.ProjectRepository;
 import com.exe202.skillnest.repository.ProposalRepository;
+import com.exe202.skillnest.repository.SavedProjectRepository;
 import com.exe202.skillnest.repository.SkillRepository;
 import com.exe202.skillnest.repository.UserRepository;
 import com.exe202.skillnest.service.ProjectService;
@@ -40,6 +41,7 @@ public class ProjectServiceImpl implements ProjectService {
     private final SkillRepository skillRepository;
     private final CompanyInfoRepository companyInfoRepository;
     private final ProposalRepository proposalRepository;
+    private final SavedProjectRepository savedProjectRepository;
 
     @Override
     @Transactional
@@ -267,8 +269,12 @@ public class ProjectServiceImpl implements ProjectService {
                     project.getProjectId(), currentUserId);
         }
 
-        // TODO: Implement isSaved functionality when SavedProject feature is added
+        // Check if project is saved by current user
         Boolean isSaved = false;
+        if (currentUserId != null) {
+            isSaved = savedProjectRepository.existsByUserUserIdAndProjectProjectId(
+                    currentUserId, project.getProjectId());
+        }
 
         return ProjectDTO.builder()
                 // ========== EXISTING FIELDS (kept as-is) ==========
