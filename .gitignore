@@ -36,3 +36,8 @@ build/
 # OS / misc
 .DS_Store
 *.log
+
+# Environment variables (Security)
+.env
+.env.local
+.env.*.local
