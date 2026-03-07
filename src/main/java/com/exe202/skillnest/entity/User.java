@@ -11,7 +11,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 @Entity
-@Table(name = "users")
+@Table(name = "users", schema = "public")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -61,4 +61,3 @@ public class User {
     )
     private Set<Role> roles = new HashSet<>();
 }
-

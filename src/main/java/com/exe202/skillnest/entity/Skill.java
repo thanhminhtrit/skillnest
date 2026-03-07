@@ -4,7 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 @Entity
-@Table(name = "skills")
+@Table(name = "skills", schema = "public")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -19,4 +19,3 @@ public class Skill {
     @Column(nullable = false, unique = true, length = 120)
     private String name;
 }
-

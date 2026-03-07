@@ -8,7 +8,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "disputes")
+@Table(name = "disputes", schema = "public")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -42,4 +42,3 @@ public class Dispute {
     @Column(name = "resolved_at")
     private LocalDateTime resolvedAt;
 }
-

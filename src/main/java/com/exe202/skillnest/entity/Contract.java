@@ -10,7 +10,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "contracts")
+@Table(name = "contracts", schema = "public")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -62,4 +62,3 @@ public class Contract {
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
 }
-
