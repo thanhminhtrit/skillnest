@@ -4,9 +4,9 @@ spring:
 
   # Database Configuration - PRODUCTION (Azure VM)
   datasource:
-    url: jdbc:postgresql://4.193.192.105:5432/skillnest_db?currentSchema=public&options=-c%20TimeZone=Asia/Ho_Chi_Minh
-    username: skillnest
-    password: Se184190!
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
     driver-class-name: org.postgresql.Driver
 
   # JPA Configuration
@@ -31,7 +31,7 @@ spring:
 
 # JWT Configuration
 jwt:
-  secret: skillnest-super-secret-key-for-jwt-token-generation-minimum-256-bits
+  secret: ${JWT_SECRET}
   expiration: 86400000  # 24 hours
 
 # Payment Configuration

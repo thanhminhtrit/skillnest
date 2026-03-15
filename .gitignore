@@ -36,3 +36,8 @@ build/
 # OS / misc
 .DS_Store
 *.log
+
+# Environment variables - never commit!
+.env
+.env.*
+!.env.example

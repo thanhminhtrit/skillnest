@@ -7,9 +7,9 @@ spring:
 
   # Database Configuration - LOCAL DEVELOPMENT
   datasource:
-    url: jdbc:postgresql://localhost:5432/skillnest_db?currentSchema=public&options=-c%20TimeZone=Asia/Ho_Chi_Minh
-    username: postgres
-    password: postgres
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/skillnest_db?currentSchema=public&options=-c%20TimeZone=Asia/Ho_Chi_Minh}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
 
   # JPA Configuration
@@ -33,7 +33,7 @@ spring:
 
 # JWT Configuration
 jwt:
-  secret: skillnest-super-secret-key-for-jwt-token-generation-minimum-256-bits
+  secret: ${JWT_SECRET:skillnest-super-secret-key-for-jwt-token-generation-minimum-256-bits}
   expiration: 86400000  # 24 hours
 
 # Payment Configuration
