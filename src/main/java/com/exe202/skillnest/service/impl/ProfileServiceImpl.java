@@ -228,6 +228,38 @@ public class ProfileServiceImpl implements ProfileService {
         return getProfileStats(user.getUserId());
     }
 
+    @Override
+    @Transactional
+    public ProfileResponseDTO updateAvatarByEmail(String email, String avatarUrl) {
+        log.info("Updating avatar for user email: {}", email);
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new NotFoundException("User not found with email: " + email));
+
+        // Update avatar URL
+        user.setAvatarUrl(avatarUrl);
+        userRepository.save(user);
+
+        log.info("Avatar updated successfully for user: {}", email);
+        return getProfile(user.getUserId());
+    }
+
+    @Override
+    @Transactional
+    public ProfileResponseDTO deleteAvatarByEmail(String email) {
+        log.info("Deleting avatar for user email: {}", email);
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new NotFoundException("User not found with email: " + email));
+
+        // Remove avatar URL
+        user.setAvatarUrl(null);
+        userRepository.save(user);
+
+        log.info("Avatar deleted successfully for user: {}", email);
+        return getProfile(user.getUserId());
+    }
+
     /**
      * Calculate profile completion percentage (0-100)
      * Based on:

@@ -74,13 +74,21 @@ public class ProposalController {
     }
 
     @PostMapping("/{proposalId}/accept")
-    @Operation(summary = "Accept proposal (project owner only)")
+    @Deprecated
+    @Operation(
+        summary = "DEPRECATED - Use /api/payments/proposals/{proposalId}/accept instead",
+        description = "⚠️ This endpoint is deprecated and will be removed in future version. Please use the Payment API to accept proposals with escrow payment protection.",
+        deprecated = true
+    )
     public ResponseEntity<BaseResponse> acceptProposal(
             @PathVariable Long proposalId,
             Authentication authentication) {
-        String email = authentication.getName();
-        ProposalDTO proposalDTO = proposalService.acceptProposal(proposalId, email);
-        return ResponseEntity.ok(new BaseResponse(200, "Proposal accepted successfully", proposalDTO));
+        return ResponseEntity.status(HttpStatus.GONE)
+                .body(new BaseResponse(
+                    410,
+                    "This endpoint is deprecated. Please use POST /api/payments/proposals/{proposalId}/accept for secure payment flow with escrow protection.",
+                    null
+                ));
     }
 
     @PostMapping("/{proposalId}/reject")
@@ -93,4 +101,3 @@ public class ProposalController {
         return ResponseEntity.ok(new BaseResponse(200, "Proposal rejected successfully", proposalDTO));
     }
 }
-

@@ -138,7 +138,7 @@ public class ConversationServiceImpl implements ConversationService {
                 .conversationId(message.getConversation().getConversationId())
                 .senderId(message.getSender().getUserId())
                 .senderName(message.getSender().getFullName())
-                .type(message.getType().name())
+                .type(message.getType())
                 .content(message.getContent())
                 .fileUrl(message.getFileUrl())
                 .sentAt(message.getSentAt())

@@ -1,6 +1,7 @@
 package com.exe202.skillnest.repository;
 
 import com.exe202.skillnest.entity.Dispute;
+import com.exe202.skillnest.enums.DisputeStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -18,5 +19,8 @@ public interface DisputeRepository extends JpaRepository<Dispute, Long> {
 
     @Query("SELECT d FROM Dispute d WHERE d.contract.client.userId = :userId OR d.contract.student.userId = :userId")
     Page<Dispute> findByParticipant(Long userId, Pageable pageable);
-}
 
+
+    // Admin/Manager queries
+    Page<Dispute> findByStatus(DisputeStatus status, Pageable pageable);
+}

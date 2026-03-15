@@ -1,5 +1,6 @@
 package com.exe202.skillnest.dto;
 
+import com.exe202.skillnest.enums.DisputeStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -14,11 +15,11 @@ import java.time.LocalDateTime;
 public class DisputeDTO {
     private Long disputeId;
     private Long contractId;
-    private Long openedBy;
-    private String openedByName;
+    private Long raisedBy;
+    private String raisedByName;
     private String reason;
-    private String status;
-    private LocalDateTime createdAt;
+    private DisputeStatus status;
     private LocalDateTime resolvedAt;
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }
-

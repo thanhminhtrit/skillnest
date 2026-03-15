@@ -128,11 +128,10 @@ public class AuthServiceImpl implements AuthService {
                 .email(user.getEmail())
                 .fullName(user.getFullName())
                 .avatarUrl(user.getAvatarUrl())
-                .status(user.getStatus().name())
+                .status(user.getStatus())
                 .phone(user.getPhone())
                 .roles(roleNames)
                 .createdAt(user.getCreatedAt())
                 .build();
     }
 }
-

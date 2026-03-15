@@ -13,7 +13,8 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: false
+
+    show-sql: false  # Production không show SQL
     properties:
       hibernate:
         format_sql: false
@@ -22,18 +23,52 @@ spring:
         jdbc:
           time_zone: Asia/Ho_Chi_Minh
 
+  # File Upload
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
 # JWT Configuration
 jwt:
   secret: skillnest-super-secret-key-for-jwt-token-generation-minimum-256-bits
-  expiration: 86400000
+  expiration: 86400000  # 24 hours
+
+# Payment Configuration
+payment:
+  platform-fee-percent: 8
+  bank:
+    name: MB Bank
+    account-number: 01280120048888
+    account-name: Đồng Thành Minh Trí
+    code: MB
 
 # Server Configuration
 server:
   port: 8080
+  error:
+    include-message: always
+    include-binding-errors: always
+  compression:
+    enabled: true
+    mime-types: text/html,text/xml,text/plain,text/css,application/javascript,application/json
 
-# Logging
+# Logging - Production
 logging:
   level:
     com.exe202.skillnest: INFO
     org.springframework.security: WARN
+    org.hibernate: WARN
+  file:
+    name: /var/log/skillnest/application.log
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
 
+# Azure Storage - Production
+azure:
+  storage:
+    connection-string: ${AZURE_STORAGE_CONNECTION_STRING}
+    container-name: skillnest-files
+    base-url: https://skillneststorage.blob.core.windows.net/skillnest-files
+    qr-base-url: https://skillneststorage.blob.core.windows.net/qrcodes/

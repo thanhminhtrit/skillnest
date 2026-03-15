@@ -1,5 +1,6 @@
 package com.exe202.skillnest.dto;
 
+import com.exe202.skillnest.enums.MessageType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -16,9 +17,8 @@ public class MessageDTO {
     private Long conversationId;
     private Long senderId;
     private String senderName;
-    private String type;
     private String content;
+    private MessageType type;
     private String fileUrl;
     private LocalDateTime sentAt;
 }
-

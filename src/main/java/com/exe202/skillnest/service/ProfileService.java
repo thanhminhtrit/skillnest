@@ -16,4 +16,8 @@ public interface ProfileService {
     ProfileResponseDTO updateProfileByEmail(String email, UpdateProfileRequest request);
     List<ApplicationHistoryDTO> getApplicationHistoryByEmail(String email);
     ProfileStatsDTO getProfileStatsByEmail(String email);
+
+    // Avatar management methods
+    ProfileResponseDTO updateAvatarByEmail(String email, String avatarUrl);
+    ProfileResponseDTO deleteAvatarByEmail(String email);
 }

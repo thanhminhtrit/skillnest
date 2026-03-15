@@ -3,6 +3,8 @@ package com.exe202.skillnest.controller;
 import com.exe202.skillnest.dto.*;
 import com.exe202.skillnest.payloads.response.BaseResponse;
 import com.exe202.skillnest.service.ProfileService;
+import com.exe202.skillnest.service.FileStorageService;
+import com.exe202.skillnest.util.FileValidator;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -12,8 +14,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/profile")
@@ -23,6 +28,8 @@ import java.util.List;
 @SecurityRequirement(name = "bearer-jwt")
 public class ProfileController {
     private final ProfileService profileService;
+    private final FileStorageService fileStorageService;
+    private final FileValidator fileValidator;
 
     @GetMapping
     @Operation(summary = "Get current user profile", description = "Returns the profile information of the authenticated user")
@@ -78,5 +85,41 @@ public class ProfileController {
         MetadataResponseDTO metadata = profileService.getMetadata();
 
         return ResponseEntity.ok(new BaseResponse(200, "Metadata retrieved successfully", metadata));
+    }
+
+    @PostMapping("/avatar")
+    @Operation(summary = "Upload avatar", description = "Upload avatar image for current user")
+    public ResponseEntity<BaseResponse> uploadAvatar(
+            @RequestParam("file") MultipartFile file,
+            Authentication authentication) {
+        log.info("POST /api/profile/avatar - Uploading avatar");
+
+        String email = authentication.getName();
+
+        // Validate image
+        fileValidator.validateImage(file);
+
+        // Store file
+        String avatarUrl = fileStorageService.storeFile(file, "avatars");
+
+        // Update user avatar
+        ProfileResponseDTO updatedProfile = profileService.updateAvatarByEmail(email, avatarUrl);
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("avatarUrl", avatarUrl);
+        response.put("profile", updatedProfile);
+
+        return ResponseEntity.ok(new BaseResponse(200, "Avatar uploaded successfully", response));
+    }
+
+    @DeleteMapping("/avatar")
+    @Operation(summary = "Delete avatar", description = "Remove avatar image for current user")
+    public ResponseEntity<BaseResponse> deleteAvatar(Authentication authentication) {
+        log.info("DELETE /api/profile/avatar - Deleting avatar");
+
+        String email = authentication.getName();
+        ProfileResponseDTO updatedProfile = profileService.deleteAvatarByEmail(email);
+
+        return ResponseEntity.ok(new BaseResponse(200, "Avatar deleted successfully", updatedProfile));
     }
 }

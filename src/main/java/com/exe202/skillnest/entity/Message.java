@@ -10,12 +10,14 @@ import org.hibernate.type.SqlTypes;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "messages", schema = "public")
-@Getter
-@Setter
+@Table(name = "messages", schema = "public", indexes = {
+    @Index(name = "idx_message_deliverable", columnList = "is_deliverable")
+})
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@Getter
+@Setter
 public class Message {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -44,4 +46,17 @@ public class Message {
     @CreationTimestamp
     @Column(name = "sent_at", nullable = false, updatable = false)
     private LocalDateTime sentAt;
+
+    @Column(name = "has_attachment", nullable = false)
+    private Boolean hasAttachment = false;
+
+    @Column(name = "attachment_urls", columnDefinition = "TEXT")
+    private String attachmentUrls; // JSON array of file URLs
+
+    @Column(name = "is_deliverable", nullable = false)
+    private Boolean isDeliverable = false;
+
+    @Column(name = "marked_deliverable_at")
+    private LocalDateTime markedDeliverableAt;
 }
+

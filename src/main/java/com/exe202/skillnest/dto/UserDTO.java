@@ -1,5 +1,6 @@
 package com.exe202.skillnest.dto;
 
+import com.exe202.skillnest.enums.UserStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -17,9 +18,9 @@ public class UserDTO {
     private String email;
     private String fullName;
     private String avatarUrl;
-    private String status;
+    private UserStatus status;
     private String phone;
     private Set<String> roles;
     private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }
-

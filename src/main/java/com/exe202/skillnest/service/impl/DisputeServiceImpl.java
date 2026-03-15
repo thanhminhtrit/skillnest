@@ -114,13 +114,12 @@ public class DisputeServiceImpl implements DisputeService {
         return DisputeDTO.builder()
                 .disputeId(dispute.getDisputeId())
                 .contractId(dispute.getContract().getContractId())
-                .openedBy(dispute.getOpenedBy().getUserId())
-                .openedByName(dispute.getOpenedBy().getFullName())
+                .raisedBy(dispute.getOpenedBy().getUserId())
+                .raisedByName(dispute.getOpenedBy().getFullName())
                 .reason(dispute.getReason())
-                .status(dispute.getStatus().name())
+                .status(dispute.getStatus())
                 .createdAt(dispute.getCreatedAt())
                 .resolvedAt(dispute.getResolvedAt())
                 .build();
     }
 }
-
