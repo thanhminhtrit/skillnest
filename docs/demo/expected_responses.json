@@ -1,0 +1,360 @@
+{
+  "auth": {
+    "register_success": {
+      "statusCode": 201,
+      "message": "User registered successfully",
+      "data": {
+        "token": "eyJhbGciOiJIUzI1NiJ9...",
+        "type": "Bearer",
+        "user": {
+          "userId": 1,
+          "email": "john.client@test.com",
+          "fullName": "John Client",
+          "avatarUrl": null,
+          "status": "ACTIVE",
+          "phone": "0901234567",
+          "roles": ["CLIENT"],
+          "createdAt": "2025-03-15T10:00:00",
+          "updatedAt": "2025-03-15T10:00:00"
+        }
+      }
+    },
+    "login_success": {
+      "statusCode": 200,
+      "message": "Login successful",
+      "data": {
+        "token": "eyJhbGciOiJIUzI1NiJ9...",
+        "type": "Bearer",
+        "user": {
+          "userId": 1,
+          "email": "john.client@test.com",
+          "fullName": "John Client",
+          "roles": ["CLIENT"]
+        }
+      }
+    },
+    "login_bad_credentials": {
+      "statusCode": 401,
+      "message": "Invalid email or password",
+      "data": null
+    }
+  },
+
+  "subscriptions": {
+    "get_plans": {
+      "statusCode": 200,
+      "message": "Success",
+      "data": [
+        {
+          "planId": 1,
+          "name": "FREE",
+          "displayName": "Gói Miễn Phí",
+          "price": 0,
+          "postLimit": 1,
+          "aiMatchingLimit": 3,
+          "durationDays": 30
+        },
+        {
+          "planId": 2,
+          "name": "BASIC",
+          "displayName": "Gói Cơ Bản",
+          "price": 199000,
+          "postLimit": 15,
+          "aiMatchingLimit": 30,
+          "durationDays": 30
+        },
+        {
+          "planId": 3,
+          "name": "PRO",
+          "displayName": "Gói Chuyên Nghiệp",
+          "price": 399000,
+          "postLimit": null,
+          "aiMatchingLimit": 100,
+          "durationDays": 30
+        }
+      ]
+    },
+    "get_my_free": {
+      "statusCode": 200,
+      "message": "Success",
+      "data": {
+        "subscriptionId": 1,
+        "planName": "Gói Miễn Phí",
+        "price": 0,
+        "postLimit": 1,
+        "postsUsed": 0,
+        "postsRemaining": 1,
+        "aiMatchingLimit": 3,
+        "aiMatchingUsed": 0,
+        "aiMatchingRemaining": 3,
+        "endDate": "2025-04-15T10:00:00",
+        "status": "ACTIVE"
+      }
+    },
+    "get_my_basic_after_2_posts": {
+      "statusCode": 200,
+      "message": "Success",
+      "data": {
+        "subscriptionId": 2,
+        "planName": "Gói Cơ Bản",
+        "price": 199000,
+        "postLimit": 15,
+        "postsUsed": 2,
+        "postsRemaining": 13,
+        "aiMatchingLimit": 30,
+        "aiMatchingUsed": 1,
+        "aiMatchingRemaining": 29,
+        "endDate": "2025-04-15T10:00:00",
+        "status": "ACTIVE"
+      }
+    },
+    "get_my_pro_unlimited": {
+      "statusCode": 200,
+      "message": "Success",
+      "data": {
+        "subscriptionId": 3,
+        "planName": "Gói Chuyên Nghiệp",
+        "price": 399000,
+        "postLimit": null,
+        "postsUsed": 15,
+        "postsRemaining": null,
+        "aiMatchingLimit": 100,
+        "aiMatchingUsed": 1,
+        "aiMatchingRemaining": 99,
+        "endDate": "2025-04-15T10:00:00",
+        "status": "ACTIVE"
+      }
+    },
+    "subscribe_success": {
+      "statusCode": 200,
+      "message": "Subscribed",
+      "data": {
+        "subscriptionId": 2,
+        "planName": "Gói Cơ Bản",
+        "price": 199000,
+        "postLimit": 15,
+        "postsUsed": 0,
+        "postsRemaining": 15,
+        "aiMatchingLimit": 30,
+        "aiMatchingUsed": 0,
+        "aiMatchingRemaining": 30,
+        "endDate": "2025-04-15T10:00:00",
+        "status": "ACTIVE"
+      }
+    },
+    "no_subscription": {
+      "statusCode": 404,
+      "message": "No active subscription found",
+      "data": null
+    }
+  },
+
+  "projects": {
+    "create_success": {
+      "statusCode": 201,
+      "message": "Project created successfully",
+      "data": {
+        "projectId": 1,
+        "clientId": 1,
+        "clientName": "John Client",
+        "title": "Senior Full-Stack Developer",
+        "description": "We are looking for an experienced full-stack developer...",
+        "projectType": "FIXED_PRICE",
+        "budgetMin": 15000000,
+        "budgetMax": 25000000,
+        "currency": "VND",
+        "status": "OPEN",
+        "skills": ["React", "Node.js", "PostgreSQL", "Docker"],
+        "location": "Ha Noi",
+        "employmentType": "Full-time",
+        "salaryUnit": "MONTH",
+        "requirements": [
+          "3+ years experience in full-stack development",
+          "Strong knowledge of React and Node.js"
+        ],
+        "headcountMin": 1,
+        "headcountMax": 2,
+        "deadline": "2025-12-31T00:00:00",
+        "benefits": ["Competitive salary", "Flexible working hours"],
+        "company": {
+          "name": "TechViet Solutions",
+          "location": "Ha Noi",
+          "size": "100-500 employees",
+          "industry": "Information Technology"
+        },
+        "postedAgo": "Đăng 0 phút trước",
+        "createdAt": "2025-03-15T10:05:00",
+        "updatedAt": "2025-03-15T10:05:00"
+      }
+    },
+    "post_limit_exceeded": {
+      "statusCode": 400,
+      "message": "Post limit reached. Used: 15/15",
+      "data": null
+    },
+    "no_subscription_post": {
+      "statusCode": 400,
+      "message": "No active subscription",
+      "data": null
+    }
+  },
+
+  "ai_matching": {
+    "find_students_success": {
+      "statusCode": 200,
+      "message": "Found 1 matching students",
+      "data": [
+        {
+          "entityId": 2,
+          "entityType": "STUDENT",
+          "name": "Alice Student",
+          "avatarUrl": null,
+          "matchScore": 0.87,
+          "matchPercentage": 87,
+          "matchReason": "Alice has strong expertise in React and Node.js with 3.8 GPA from FPT University. Her experience in full-stack development and PostgreSQL makes her an excellent fit.",
+          "matchingSkills": null
+        }
+      ]
+    },
+    "find_projects_success": {
+      "statusCode": 200,
+      "message": "Found 2 matching projects",
+      "data": [
+        {
+          "entityId": 1,
+          "entityType": "PROJECT",
+          "name": "Senior Full-Stack Developer",
+          "avatarUrl": null,
+          "matchScore": 0.92,
+          "matchPercentage": 92,
+          "matchReason": "This project perfectly matches your React and Node.js expertise.",
+          "matchingSkills": null
+        },
+        {
+          "entityId": 2,
+          "entityType": "PROJECT",
+          "name": "Frontend Developer Intern",
+          "avatarUrl": null,
+          "matchScore": 0.78,
+          "matchPercentage": 78,
+          "matchReason": "Your strong React skills make you a good fit for this internship role.",
+          "matchingSkills": null
+        }
+      ]
+    },
+    "ai_limit_exceeded": {
+      "statusCode": 400,
+      "message": "AI matching limit reached. Upgrade your plan!",
+      "data": null
+    },
+    "wrong_role_client_finds_projects": {
+      "statusCode": 403,
+      "message": "Access Denied",
+      "data": null
+    }
+  },
+
+  "proposals": {
+    "create_success": {
+      "statusCode": 201,
+      "message": "Proposal submitted successfully",
+      "data": {
+        "proposalId": 1,
+        "projectId": 1,
+        "projectTitle": "Senior Full-Stack Developer",
+        "studentId": 2,
+        "studentName": "Alice Student",
+        "coverLetter": "I am very interested in this full-stack position...",
+        "proposedPrice": 20000000,
+        "currency": "VND",
+        "durationDays": 30,
+        "status": "SUBMITTED",
+        "createdAt": "2025-03-15T10:10:00"
+      }
+    }
+  },
+
+  "payments": {
+    "accept_proposal": {
+      "statusCode": 201,
+      "message": "Please transfer 1,600,000 VND (8% platform maintenance fee)...",
+      "data": {
+        "paymentRequestId": 1,
+        "paymentReference": "SKILLNEST-ABC123",
+        "totalAmount": 1600000,
+        "platformFee": 1600000,
+        "studentAmount": 20000000,
+        "currency": "VND",
+        "qrCodeUrl": "https://storage.azure.com/qr/SKILLNEST-ABC123.png",
+        "bankDetails": {
+          "bankName": "MB Bank",
+          "accountNumber": "01280120048888",
+          "accountName": "Đồng Thành Minh Trí",
+          "transferNote": "SKILLNEST SKILLNEST-ABC123"
+        }
+      }
+    },
+    "verify_success": {
+      "statusCode": 200,
+      "message": "Payment verified and contract created successfully",
+      "data": {
+        "paymentRequestId": 1,
+        "status": "PAID",
+        "verifiedBy": 3,
+        "verifiedByName": "System Admin"
+      }
+    }
+  },
+
+  "contracts": {
+    "get_my": {
+      "statusCode": 200,
+      "message": "Success",
+      "data": {
+        "content": [
+          {
+            "contractId": 1,
+            "projectId": 1,
+            "projectTitle": "Senior Full-Stack Developer",
+            "clientId": 1,
+            "clientName": "John Client",
+            "studentId": 2,
+            "studentName": "Alice Student",
+            "agreedPrice": 20000000,
+            "currency": "VND",
+            "status": "ACTIVE",
+            "createdAt": "2025-03-15T10:15:00"
+          }
+        ],
+        "totalElements": 1,
+        "totalPages": 1
+      }
+    }
+  },
+
+  "errors": {
+    "unauthorized_no_token": {
+      "statusCode": 403,
+      "message": "Access Denied",
+      "data": null
+    },
+    "validation_error": {
+      "statusCode": 400,
+      "message": "Validation failed",
+      "data": {
+        "title": "Title is required",
+        "email": "Email must be valid"
+      }
+    },
+    "not_found": {
+      "statusCode": 404,
+      "message": "Resource not found",
+      "data": null
+    },
+    "forbidden_wrong_role": {
+      "statusCode": 403,
+      "message": "Access Denied",
+      "data": null
+    }
+  }
+}

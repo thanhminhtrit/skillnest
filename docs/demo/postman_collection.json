@@ -1,0 +1,844 @@
+{
+  "info": {
+    "name": "SkillNest API",
+    "description": "Complete API collection for SkillNest - AI Matching & Subscription demo",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "BASE_URL",             "value": "http://localhost:8080" },
+    { "key": "JOHN_TOKEN",           "value": "" },
+    { "key": "ALICE_TOKEN",          "value": "" },
+    { "key": "ADMIN_TOKEN",          "value": "" },
+    { "key": "PROJECT_ID_1",         "value": "" },
+    { "key": "PROJECT_ID_2",         "value": "" },
+    { "key": "PROPOSAL_ID_1",        "value": "" },
+    { "key": "PAYMENT_REQUEST_ID_1", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "📁 Auth",
+      "item": [
+        {
+          "name": "1.1 Register Client (John)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data.token) {",
+                  "  pm.collectionVariables.set('JOHN_TOKEN', json.data.token);",
+                  "  pm.test('JOHN_TOKEN saved', () => pm.expect(json.data.token).to.be.a('string'));",
+                  "}",
+                  "pm.test('Response time < 2000ms', () => pm.expect(pm.response.responseTime).to.be.below(2000));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{BASE_URL}}/api/auth/register", "host": ["{{BASE_URL}}"], "path": ["api","auth","register"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"john.client@test.com\",\n  \"password\": \"Password@123\",\n  \"fullName\": \"John Client\",\n  \"phone\": \"0901234567\",\n  \"role\": \"CLIENT\"\n}"
+            }
+          }
+        },
+        {
+          "name": "1.2 Register Student (Alice)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data.token) {",
+                  "  pm.collectionVariables.set('ALICE_TOKEN', json.data.token);",
+                  "  pm.test('ALICE_TOKEN saved', () => pm.expect(json.data.token).to.be.a('string'));",
+                  "}",
+                  "pm.test('Role is STUDENT', () => pm.expect(json.data.user.roles).to.include('STUDENT'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{BASE_URL}}/api/auth/register", "host": ["{{BASE_URL}}"], "path": ["api","auth","register"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"alice.student@test.com\",\n  \"password\": \"Password@123\",\n  \"fullName\": \"Alice Student\",\n  \"phone\": \"0907654321\",\n  \"role\": \"STUDENT\"\n}"
+            }
+          }
+        },
+        {
+          "name": "1.3 Login Client (John)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data.token) {",
+                  "  pm.collectionVariables.set('JOHN_TOKEN', json.data.token);",
+                  "}",
+                  "pm.test('Token present', () => pm.expect(json.data.token).to.be.a('string'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{BASE_URL}}/api/auth/login", "host": ["{{BASE_URL}}"], "path": ["api","auth","login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"john.client@test.com\",\n  \"password\": \"Password@123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "1.4 Login Student (Alice)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data.token) {",
+                  "  pm.collectionVariables.set('ALICE_TOKEN', json.data.token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{BASE_URL}}/api/auth/login", "host": ["{{BASE_URL}}"], "path": ["api","auth","login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"alice.student@test.com\",\n  \"password\": \"Password@123\"\n}"
+            }
+          }
+        },
+        {
+          "name": "❌ Login Bad Credentials",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{BASE_URL}}/api/auth/login", "host": ["{{BASE_URL}}"], "path": ["api","auth","login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"john.client@test.com\",\n  \"password\": \"WrongPassword!\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "📁 Profile Management",
+      "item": [
+        {
+          "name": "Create Alice's Profile",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Response time < 2000ms', () => pm.expect(pm.response.responseTime).to.be.below(2000));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{ALICE_TOKEN}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "url": { "raw": "{{BASE_URL}}/api/profile", "host": ["{{BASE_URL}}"], "path": ["api","profile"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"university\": \"FPT University\",\n  \"major\": \"Software Engineering\",\n  \"year\": \"Year 3\",\n  \"gpa\": 3.8,\n  \"bio\": \"Passionate full-stack developer with experience in React, Node.js, and Python.\",\n  \"skills\": [\"React\", \"Node.js\", \"Python\", \"PostgreSQL\", \"Docker\"],\n  \"interests\": [\"Web Development\", \"AI/ML\", \"Cloud Computing\"],\n  \"preferredLocations\": [\"Ha Noi\", \"Remote\"],\n  \"preferredJobTypes\": [\"Full-time\", \"Internship\"]\n}"
+            }
+          }
+        },
+        {
+          "name": "Create John's Company Info",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{JOHN_TOKEN}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "url": { "raw": "{{BASE_URL}}/api/company-info", "host": ["{{BASE_URL}}"], "path": ["api","company-info"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"TechViet Solutions\",\n  \"location\": \"Ha Noi\",\n  \"size\": \"100-500 employees\",\n  \"industry\": \"Information Technology\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "📁 Subscription Management",
+      "item": [
+        {
+          "name": "Get All Plans (Public)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('3 plans returned', () => pm.expect(json.data.length).to.equal(3));",
+                  "pm.test('FREE plan exists', () => {",
+                  "  const free = json.data.find(p => p.name === 'FREE');",
+                  "  pm.expect(free).to.not.be.undefined;",
+                  "  pm.expect(free.price).to.equal(0);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{BASE_URL}}/api/subscriptions/plans", "host": ["{{BASE_URL}}"], "path": ["api","subscriptions","plans"] }
+          }
+        },
+        {
+          "name": "John Subscribes to FREE",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{JOHN_TOKEN}}" }],
+            "url": { "raw": "{{BASE_URL}}/api/subscriptions/subscribe?planId=1", "host": ["{{BASE_URL}}"], "path": ["api","subscriptions","subscribe"], "query": [{"key":"planId","value":"1"}] }
+          }
+        },
+        {
+          "name": "Alice Subscribes to FREE",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{ALICE_TOKEN}}" }],
+            "url": { "raw": "{{BASE_URL}}/api/subscriptions/subscribe?planId=1", "host": ["{{BASE_URL}}"], "path": ["api","subscriptions","subscribe"], "query": [{"key":"planId","value":"1"}] }
+          }
+        },
+        {
+          "name": "John Upgrades to BASIC",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Plan is BASIC', () => pm.expect(json.data.planName).to.equal('Gói Cơ Bản'));",
+                  "pm.test('postsRemaining is 15', () => pm.expect(json.data.postsRemaining).to.equal(15));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{JOHN_TOKEN}}" }],
+            "url": { "raw": "{{BASE_URL}}/api/subscriptions/subscribe?planId=2", "host": ["{{BASE_URL}}"], "path": ["api","subscriptions","subscribe"], "query": [{"key":"planId","value":"2"}] }
+          }
+        },
+        {
+          "name": "Get My Subscription (John)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const sub = pm.response.json().data;",
+                  "pm.test('Status is ACTIVE', () => pm.expect(sub.status).to.equal('ACTIVE'));",
+                  "pm.test('Has endDate', () => pm.expect(sub.endDate).to.be.a('string'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{JOHN_TOKEN}}" }],
+            "url": { "raw": "{{BASE_URL}}/api/subscriptions/my", "host": ["{{BASE_URL}}"], "path": ["api","subscriptions","my"] }
+          }
+        },
+        {
+          "name": "John Upgrades to PRO",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const sub = pm.response.json().data;",
+                  "pm.test('postLimit is null (unlimited)', () => pm.expect(sub.postLimit).to.be.null);",
+                  "pm.test('aiMatchingLimit is 100', () => pm.expect(sub.aiMatchingLimit).to.equal(100));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{JOHN_TOKEN}}" }],
+            "url": { "raw": "{{BASE_URL}}/api/subscriptions/subscribe?planId=3", "host": ["{{BASE_URL}}"], "path": ["api","subscriptions","subscribe"], "query": [{"key":"planId","value":"3"}] }
+          }
+        },
+        {
+          "name": "❌ Get Subscription Without Auth",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 401 or 403', () => {",
+                  "  pm.expect([401,403]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{BASE_URL}}/api/subscriptions/my", "host": ["{{BASE_URL}}"], "path": ["api","subscriptions","my"] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "📁 Project Management",
+      "item": [
+        {
+          "name": "Create Project 1 (Senior Full-Stack)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data.projectId) {",
+                  "  pm.collectionVariables.set('PROJECT_ID_1', json.data.projectId);",
+                  "}",
+                  "pm.test('Status is OPEN', () => pm.expect(json.data.status).to.equal('OPEN'));",
+                  "pm.test('Response time < 3000ms', () => pm.expect(pm.response.responseTime).to.be.below(3000));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{JOHN_TOKEN}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "url": { "raw": "{{BASE_URL}}/api/projects", "host": ["{{BASE_URL}}"], "path": ["api","projects"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Senior Full-Stack Developer\",\n  \"description\": \"We are looking for an experienced full-stack developer to build a modern web application using React and Node.js. Must have strong knowledge of PostgreSQL and Docker.\",\n  \"projectType\": \"FIXED_PRICE\",\n  \"budgetMin\": 15000000,\n  \"budgetMax\": 25000000,\n  \"currency\": \"VND\",\n  \"location\": \"Ha Noi\",\n  \"employmentType\": \"Full-time\",\n  \"salaryUnit\": \"MONTH\",\n  \"skillIds\": [\"React\", \"Node.js\", \"PostgreSQL\", \"Docker\"],\n  \"requirements\": [\n    \"3+ years experience in full-stack development\",\n    \"Strong knowledge of React and Node.js\",\n    \"Experience with PostgreSQL and Docker\"\n  ],\n  \"headcountMin\": 1,\n  \"headcountMax\": 2,\n  \"deadline\": \"2025-12-31\",\n  \"benefits\": [\"Competitive salary\", \"Flexible working hours\", \"Remote work option\"]\n}"
+            }
+          }
+        },
+        {
+          "name": "Create Project 2 (Frontend Intern)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data.projectId) {",
+                  "  pm.collectionVariables.set('PROJECT_ID_2', json.data.projectId);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{JOHN_TOKEN}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "url": { "raw": "{{BASE_URL}}/api/projects", "host": ["{{BASE_URL}}"], "path": ["api","projects"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Frontend Developer Intern\",\n  \"description\": \"Looking for a talented frontend developer intern to join our team. Must be proficient in React.\",\n  \"projectType\": \"FIXED_PRICE\",\n  \"budgetMin\": 5000000,\n  \"budgetMax\": 8000000,\n  \"currency\": \"VND\",\n  \"location\": \"Ha Noi\",\n  \"employmentType\": \"Internship\",\n  \"salaryUnit\": \"MONTH\",\n  \"skillIds\": [\"React\", \"JavaScript\", \"HTML\", \"CSS\"],\n  \"requirements\": [\"Student or fresh graduate\", \"Strong knowledge of React\"],\n  \"headcountMin\": 2,\n  \"headcountMax\": 3,\n  \"deadline\": \"2025-11-30\",\n  \"benefits\": [\"Real project experience\", \"Potential full-time offer\"]\n}"
+            }
+          }
+        },
+        {
+          "name": "Get All Open Projects",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Has content array', () => pm.expect(pm.response.json().data.content).to.be.an('array'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{BASE_URL}}/api/projects?page=0&size=10", "host": ["{{BASE_URL}}"], "path": ["api","projects"], "query": [{"key":"page","value":"0"},{"key":"size","value":"10"}] }
+          }
+        },
+        {
+          "name": "Get Project By ID",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Correct project', () => {",
+                  "  const id = parseInt(pm.collectionVariables.get('PROJECT_ID_1'));",
+                  "  pm.expect(pm.response.json().data.projectId).to.equal(id);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "url": { "raw": "{{BASE_URL}}/api/projects/{{PROJECT_ID_1}}", "host": ["{{BASE_URL}}"], "path": ["api","projects","{{PROJECT_ID_1}}"] }
+          }
+        },
+        {
+          "name": "Get My Projects (John)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{JOHN_TOKEN}}" }],
+            "url": { "raw": "{{BASE_URL}}/api/projects/my?page=0&size=10", "host": ["{{BASE_URL}}"], "path": ["api","projects","my"], "query": [{"key":"page","value":"0"},{"key":"size","value":"10"}] }
+          }
+        },
+        {
+          "name": "❌ Create Project Without Subscription",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400 or 404', () => {",
+                  "  pm.expect([400,404]).to.include(pm.response.code);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{ALICE_TOKEN}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "url": { "raw": "{{BASE_URL}}/api/projects", "host": ["{{BASE_URL}}"], "path": ["api","projects"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Test Project\",\n  \"description\": \"Testing without subscription\",\n  \"projectType\": \"FIXED_PRICE\",\n  \"budgetMin\": 1000000,\n  \"budgetMax\": 2000000,\n  \"currency\": \"VND\",\n  \"skillIds\": []\n}"
+            }
+          }
+        },
+        {
+          "name": "❌ Create Project Missing Title",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{JOHN_TOKEN}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "url": { "raw": "{{BASE_URL}}/api/projects", "host": ["{{BASE_URL}}"], "path": ["api","projects"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Missing title field\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "📁 AI Matching",
+      "item": [
+        {
+          "name": "Find Best Students for Project 1",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Results is array', () => pm.expect(json.data).to.be.an('array'));",
+                  "if (json.data.length > 0) {",
+                  "  const first = json.data[0];",
+                  "  pm.test('Has matchScore', () => pm.expect(first.matchScore).to.be.a('number'));",
+                  "  pm.test('matchScore between 0 and 1', () => pm.expect(first.matchScore).to.be.within(0, 1));",
+                  "  pm.test('entityType is STUDENT', () => pm.expect(first.entityType).to.equal('STUDENT'));",
+                  "}",
+                  "pm.test('Response time < 30000ms', () => pm.expect(pm.response.responseTime).to.be.below(30000));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{JOHN_TOKEN}}" }],
+            "url": {
+              "raw": "{{BASE_URL}}/api/ai-matching/find-students?projectId={{PROJECT_ID_1}}&limit=5",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api","ai-matching","find-students"],
+              "query": [{"key":"projectId","value":"{{PROJECT_ID_1}}"},{"key":"limit","value":"5"}]
+            }
+          }
+        },
+        {
+          "name": "Find Best Projects for Alice",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('Results is array', () => pm.expect(json.data).to.be.an('array'));",
+                  "if (json.data.length > 0) {",
+                  "  pm.test('Sorted desc by matchScore', () => {",
+                  "    const scores = json.data.map(r => r.matchScore);",
+                  "    for (let i = 1; i < scores.length; i++) {",
+                  "      pm.expect(scores[i]).to.be.at.most(scores[i-1]);",
+                  "    }",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{ALICE_TOKEN}}" }],
+            "url": {
+              "raw": "{{BASE_URL}}/api/ai-matching/find-projects?limit=10",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api","ai-matching","find-projects"],
+              "query": [{"key":"limit","value":"10"}]
+            }
+          }
+        },
+        {
+          "name": "❌ Student Calls find-students (Wrong Role)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{ALICE_TOKEN}}" }],
+            "url": {
+              "raw": "{{BASE_URL}}/api/ai-matching/find-students?projectId={{PROJECT_ID_1}}&limit=5",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api","ai-matching","find-students"],
+              "query": [{"key":"projectId","value":"{{PROJECT_ID_1}}"},{"key":"limit","value":"5"}]
+            }
+          }
+        },
+        {
+          "name": "❌ Client Calls find-projects (Wrong Role)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{JOHN_TOKEN}}" }],
+            "url": {
+              "raw": "{{BASE_URL}}/api/ai-matching/find-projects?limit=5",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api","ai-matching","find-projects"],
+              "query": [{"key":"limit","value":"5"}]
+            }
+          }
+        },
+        {
+          "name": "❌ Exceed FREE AI Quota (4th call after 3 uses)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 400', () => pm.response.to.have.status(400));",
+                  "pm.test('Quota message', () => {",
+                  "  pm.expect(pm.response.json().message).to.include('limit reached');",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{ALICE_TOKEN}}" }],
+            "url": {
+              "raw": "{{BASE_URL}}/api/ai-matching/find-projects?limit=5",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api","ai-matching","find-projects"],
+              "query": [{"key":"limit","value":"5"}]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "📁 Proposal & Contract",
+      "item": [
+        {
+          "name": "Alice Submits Proposal",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data.proposalId) {",
+                  "  pm.collectionVariables.set('PROPOSAL_ID_1', json.data.proposalId);",
+                  "}",
+                  "pm.test('Status is SUBMITTED', () => pm.expect(json.data.status).to.equal('SUBMITTED'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{ALICE_TOKEN}}" },
+              { "key": "Content-Type",   "value": "application/json" }
+            ],
+            "url": { "raw": "{{BASE_URL}}/api/proposals", "host": ["{{BASE_URL}}"], "path": ["api","proposals"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"projectId\": {{PROJECT_ID_1}},\n  \"coverLetter\": \"I am very interested in this full-stack position. With my strong background in React, Node.js, and PostgreSQL, I can deliver high-quality results. I have worked on similar projects before.\",\n  \"proposedPrice\": 20000000,\n  \"currency\": \"VND\",\n  \"durationDays\": 30\n}"
+            }
+          }
+        },
+        {
+          "name": "John Views Proposals for Project 1",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "pm.test('At least 1 proposal', () => pm.expect(json.data.content.length).to.be.at.least(1));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{JOHN_TOKEN}}" }],
+            "url": {
+              "raw": "{{BASE_URL}}/api/proposals/project/{{PROJECT_ID_1}}?page=0&size=10",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api","proposals","project","{{PROJECT_ID_1}}"],
+              "query": [{"key":"page","value":"0"},{"key":"size","value":"10"}]
+            }
+          }
+        },
+        {
+          "name": "Alice Views Her Contracts",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{ALICE_TOKEN}}" }],
+            "url": {
+              "raw": "{{BASE_URL}}/api/contracts/my?page=0&size=10",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api","contracts","my"],
+              "query": [{"key":"page","value":"0"},{"key":"size","value":"10"}]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "📁 Payment System",
+      "item": [
+        {
+          "name": "John Accepts Proposal (Get QR)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data.paymentRequestId) {",
+                  "  pm.collectionVariables.set('PAYMENT_REQUEST_ID_1', json.data.paymentRequestId);",
+                  "}",
+                  "pm.test('Has bankDetails', () => pm.expect(json.data.bankDetails).to.not.be.undefined);",
+                  "pm.test('Has paymentReference', () => pm.expect(json.data.paymentReference).to.be.a('string'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{JOHN_TOKEN}}" }],
+            "url": {
+              "raw": "{{BASE_URL}}/api/payments/proposals/{{PROPOSAL_ID_1}}/accept",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api","payments","proposals","{{PROPOSAL_ID_1}}","accept"]
+            }
+          }
+        },
+        {
+          "name": "Admin Verifies Payment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('Status is PAID', () => pm.expect(pm.response.json().data.status).to.equal('PAID'));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Authorization", "value": "Bearer {{ADMIN_TOKEN}}" }],
+            "url": {
+              "raw": "{{BASE_URL}}/api/payments/{{PAYMENT_REQUEST_ID_1}}/verify",
+              "host": ["{{BASE_URL}}"],
+              "path": ["api","payments","{{PAYMENT_REQUEST_ID_1}}","verify"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "📁 Admin Operations",
+      "item": [
+        {
+          "name": "Admin Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "const json = pm.response.json();",
+                  "if (json.data && json.data.token) {",
+                  "  pm.collectionVariables.set('ADMIN_TOKEN', json.data.token);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": { "raw": "{{BASE_URL}}/api/auth/login", "host": ["{{BASE_URL}}"], "path": ["api","auth","login"] },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@skillnest.com\",\n  \"password\": \"Admin@123\"\n}"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

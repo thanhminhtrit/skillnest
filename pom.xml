@@ -119,6 +119,13 @@
 			<version>2.9.1</version>
 		</dependency>
 
+		<!-- OpenAI Java SDK -->
+		<dependency>
+			<groupId>com.openai</groupId>
+			<artifactId>openai-java</artifactId>
+			<version>0.12.0</version>
+		</dependency>
+
 		<!-- Test -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>

@@ -18,6 +18,7 @@ import com.exe202.skillnest.repository.ProposalRepository;
 import com.exe202.skillnest.repository.SkillRepository;
 import com.exe202.skillnest.repository.UserRepository;
 import com.exe202.skillnest.service.ProjectService;
+import com.exe202.skillnest.service.SubscriptionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -40,12 +41,16 @@ public class ProjectServiceImpl implements ProjectService {
     private final SkillRepository skillRepository;
     private final CompanyInfoRepository companyInfoRepository;
     private final ProposalRepository proposalRepository;
+    private final SubscriptionService subscriptionService;
 
     @Override
     @Transactional
     public ProjectDTO createProject(CreateProjectRequest request, String email) {
         User client = userRepository.findByEmail(email)
                 .orElseThrow(() -> new NotFoundException("User not found"));
+
+        // Check subscription quota before creating post
+        subscriptionService.checkAndIncrementPostUsage(client.getUserId());
 
         Set<Skill> skills = new HashSet<>();
         if (request.getSkillIds() != null && !request.getSkillIds().isEmpty()) {
