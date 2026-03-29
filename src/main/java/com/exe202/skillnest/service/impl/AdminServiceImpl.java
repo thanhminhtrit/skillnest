@@ -32,9 +32,15 @@ public class AdminServiceImpl implements AdminService {
     @Override
     @Transactional(readOnly = true)
     public Page<UserDTO> getAllUsers(String role, UserStatus status, String search, Pageable pageable) {
-        // Implement filtering logic based on parameters
-        if (search != null && !search.isEmpty()) {
-            return userRepository.findByEmailContainingIgnoreCaseOrFullNameContainingIgnoreCase(search, search, pageable)
+        // Priority: search > role > status > all
+        if (search != null && !search.trim().isEmpty()) {
+            return userRepository.findByEmailContainingIgnoreCaseOrFullNameContainingIgnoreCase(
+                    search.trim(), search.trim(), pageable)
+                    .map(userMapper::toDTO);
+        }
+
+        if (role != null && !role.trim().isEmpty()) {
+            return userRepository.findByRoleName(role.trim().toUpperCase(), pageable)
                     .map(userMapper::toDTO);
         }
 

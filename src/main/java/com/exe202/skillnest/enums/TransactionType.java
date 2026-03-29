@@ -1,9 +1,6 @@
 package com.exe202.skillnest.enums;
 
 public enum TransactionType {
-    ESCROW_DEPOSIT,   // Client payment deposited to platform
-    PAYOUT,           // Platform pays student
-    REFUND,           // Platform refunds client
-    PLATFORM_FEE      // Platform keeps commission (8%)
+    PLATFORM_FEE_PAYMENT,   // Client pays 8% platform fee (verified by admin/manager)
+    PLATFORM_FEE_CANCELLED  // Platform fee cancelled before verification
 }
-

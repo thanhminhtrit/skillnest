@@ -24,5 +24,10 @@ public interface FileStorageService {
      * @return Array of URLs to access the files
      */
     String[] storeMultipleFiles(MultipartFile[] files, String directory);
+
+    /**
+     * Store raw bytes as a file
+     */
+    String storeBytes(byte[] content, String fileName, String directory);
 }
 

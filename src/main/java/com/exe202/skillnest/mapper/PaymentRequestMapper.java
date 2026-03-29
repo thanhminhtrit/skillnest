@@ -2,6 +2,7 @@ package com.exe202.skillnest.mapper;
 
 import com.exe202.skillnest.dto.PaymentRequestDTO;
 import com.exe202.skillnest.entity.PaymentRequest;
+import com.exe202.skillnest.entity.User;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -12,15 +13,31 @@ public class PaymentRequestMapper {
             return null;
         }
 
+        // Extract client info directly from PaymentRequest.client
+        Long clientId = null;
+        String clientName = null;
+        if (entity.getClient() != null) {
+            User client = entity.getClient();
+            clientId = client.getUserId();
+            clientName = client.getFullName();
+        }
+
+        // Extract student info through proposal → student (separate relationship)
+        Long studentId = null;
+        String studentName = null;
+        if (entity.getProposal() != null && entity.getProposal().getStudent() != null) {
+            User student = entity.getProposal().getStudent();
+            studentId = student.getUserId();
+            studentName = student.getFullName();
+        }
+
         return PaymentRequestDTO.builder()
                 .paymentRequestId(entity.getPaymentRequestId())
                 .proposalId(entity.getProposal() != null ? entity.getProposal().getProposalId() : null)
-                .clientId(entity.getClient() != null ? entity.getClient().getUserId() : null)
-                .clientName(entity.getClient() != null ? entity.getClient().getFullName() : null)
-                .studentId(entity.getProposal() != null && entity.getProposal().getStudent() != null
-                        ? entity.getProposal().getStudent().getUserId() : null)
-                .studentName(entity.getProposal() != null && entity.getProposal().getStudent() != null
-                        ? entity.getProposal().getStudent().getFullName() : null)
+                .clientId(clientId)
+                .clientName(clientName)
+                .studentId(studentId)
+                .studentName(studentName)
                 .totalAmount(entity.getTotalAmount())
                 .platformFee(entity.getPlatformFee())
                 .studentAmount(entity.getStudentAmount())

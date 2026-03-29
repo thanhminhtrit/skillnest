@@ -1,12 +1,9 @@
 package com.exe202.skillnest.service.impl;
 
 import com.exe202.skillnest.dto.ProposalDTO;
-import com.exe202.skillnest.entity.Contract;
-import com.exe202.skillnest.entity.Conversation;
 import com.exe202.skillnest.entity.Project;
 import com.exe202.skillnest.entity.Proposal;
 import com.exe202.skillnest.entity.User;
-import com.exe202.skillnest.enums.ContractStatus;
 import com.exe202.skillnest.enums.ProposalStatus;
 import com.exe202.skillnest.enums.ProjectStatus;
 import com.exe202.skillnest.exception.BadRequestException;
@@ -14,8 +11,6 @@ import com.exe202.skillnest.exception.ConflictException;
 import com.exe202.skillnest.exception.ForbiddenException;
 import com.exe202.skillnest.exception.NotFoundException;
 import com.exe202.skillnest.payloads.request.CreateProposalRequest;
-import com.exe202.skillnest.repository.ContractRepository;
-import com.exe202.skillnest.repository.ConversationRepository;
 import com.exe202.skillnest.repository.ProjectRepository;
 import com.exe202.skillnest.repository.ProposalRepository;
 import com.exe202.skillnest.repository.UserRepository;
@@ -33,8 +28,6 @@ public class ProposalServiceImpl implements ProposalService {
     private final ProposalRepository proposalRepository;
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
-    private final ContractRepository contractRepository;
-    private final ConversationRepository conversationRepository;
 
     @Override
     @Transactional
@@ -70,6 +63,7 @@ public class ProposalServiceImpl implements ProposalService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<ProposalDTO> getProposalsForProject(Long projectId, String email, Pageable pageable) {
         Project project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new NotFoundException("Project not found"));
@@ -87,6 +81,7 @@ public class ProposalServiceImpl implements ProposalService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<ProposalDTO> getMyProposals(String email, Pageable pageable) {
         User student = userRepository.findByEmail(email)
                 .orElseThrow(() -> new NotFoundException("User not found"));
@@ -116,30 +111,6 @@ public class ProposalServiceImpl implements ProposalService {
 
         proposal.setStatus(ProposalStatus.ACCEPTED);
         proposal = proposalRepository.save(proposal);
-
-        // Update project status to IN_PROGRESS
-        Project project = proposal.getProject();
-        project.setStatus(ProjectStatus.IN_PROGRESS);
-        projectRepository.save(project);
-
-        // Automatically create contract
-        Contract contract = Contract.builder()
-                .project(proposal.getProject())
-                .proposal(proposal)
-                .client(proposal.getProject().getClient())
-                .student(proposal.getStudent())
-                .agreedPrice(proposal.getProposedPrice())
-                .currency(proposal.getCurrency())
-                .status(ContractStatus.PENDING)
-                .build();
-        contract = contractRepository.save(contract);
-
-        // Automatically create conversation for the contract
-        Conversation conversation = Conversation.builder()
-                .contract(contract)
-                .build();
-        conversationRepository.save(conversation);
-
         return convertToDTO(proposal);
     }
 
@@ -168,6 +139,7 @@ public class ProposalServiceImpl implements ProposalService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ProposalDTO getProposalById(Long proposalId, String email) {
         Proposal proposal = proposalRepository.findById(proposalId)
                 .orElseThrow(() -> new NotFoundException("Proposal not found"));

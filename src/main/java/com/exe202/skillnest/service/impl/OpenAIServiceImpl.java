@@ -18,13 +18,22 @@ public class OpenAIServiceImpl implements OpenAIService {
     @Value("${openai.api-key:}")
     private String apiKey;
 
+    private volatile OpenAIClient cachedClient;
+
     private OpenAIClient client() {
-        if (apiKey == null || apiKey.isBlank()) {
-            throw new IllegalStateException("OPENAI_API_KEY environment variable is not set");
+        if (cachedClient == null) {
+            synchronized (this) {
+                if (cachedClient == null) {
+                    if (apiKey == null || apiKey.isBlank()) {
+                        throw new IllegalStateException("OPENAI_API_KEY environment variable is not set");
+                    }
+                    cachedClient = OpenAIOkHttpClient.builder()
+                            .apiKey(apiKey)
+                            .build();
+                }
+            }
         }
-        return OpenAIOkHttpClient.builder()
-                .apiKey(apiKey)
-                .build();
+        return cachedClient;
     }
 
     @Override

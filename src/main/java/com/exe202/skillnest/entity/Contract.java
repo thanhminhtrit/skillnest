@@ -41,6 +41,7 @@ public class Contract {
     @Column(name = "agreed_price", nullable = false, precision = 12, scale = 2)
     private BigDecimal agreedPrice;
 
+    @Builder.Default
     @Column(nullable = false, length = 10)
     private String currency = "VND";
 
@@ -50,6 +51,7 @@ public class Contract {
     @Column(name = "end_at")
     private LocalDateTime endAt;
 
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private ContractStatus status = ContractStatus.PENDING;
@@ -61,4 +63,7 @@ public class Contract {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    @Version
+    private Long version;
 }

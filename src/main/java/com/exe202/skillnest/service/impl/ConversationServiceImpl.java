@@ -93,6 +93,7 @@ public class ConversationServiceImpl implements ConversationService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<MessageDTO> getMessages(Long conversationId, String email, Pageable pageable) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new NotFoundException("User not found"));
@@ -106,6 +107,7 @@ public class ConversationServiceImpl implements ConversationService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ConversationDTO getConversationByContractId(Long contractId, String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new NotFoundException("User not found"));

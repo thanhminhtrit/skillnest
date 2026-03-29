@@ -32,15 +32,14 @@ public class QRCodeGenerator {
                                           String accountName, BigDecimal amount,
                                           String transferNote) throws Exception {
         try {
-            // VietQR format for bank transfer
+            // VietQR URL scheme for bank transfer (MVP format — replace with EMVCo QR when integrating official VietQR API)
             String qrContent = String.format(
-                "2|%s|%s|%s|%s|%s|0|0|%s",
+                "https://img.vietqr.io/image/%s-%s-compact.png?amount=%s&addInfo=%s&accountName=%s",
                 bankCode,
                 accountNumber,
-                accountName,
                 amount.toPlainString(),
-                transferNote,
-                "VND"
+                java.net.URLEncoder.encode(transferNote, "UTF-8"),
+                java.net.URLEncoder.encode(accountName, "UTF-8")
             );
 
             Map<EncodeHintType, Object> hints = new HashMap<>();

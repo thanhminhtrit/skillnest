@@ -1,6 +1,8 @@
 package com.exe202.skillnest.config;
 
+import com.exe202.skillnest.entity.Role;
 import com.exe202.skillnest.entity.SubscriptionPlan;
+import com.exe202.skillnest.repository.RoleRepository;
 import com.exe202.skillnest.repository.SubscriptionPlanRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.ApplicationArguments;
@@ -14,10 +16,21 @@ import java.util.List;
 @RequiredArgsConstructor
 public class DataSeeder implements ApplicationRunner {
 
+    private final RoleRepository roleRepository;
     private final SubscriptionPlanRepository planRepository;
 
     @Override
     public void run(ApplicationArguments args) {
+        // Seed roles
+        if (roleRepository.count() == 0) {
+            roleRepository.saveAll(List.of(
+                    Role.builder().name("STUDENT").build(),
+                    Role.builder().name("CLIENT").build(),
+                    Role.builder().name("MANAGER").build(),
+                    Role.builder().name("ADMIN").build()
+            ));
+        }
+
         if (planRepository.count() > 0) return;
 
         planRepository.saveAll(List.of(

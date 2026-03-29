@@ -14,7 +14,9 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,7 +24,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/payments")
 @RequiredArgsConstructor
-@Tag(name = "Payment Management", description = "Payment escrow system with 8% platform fee")
+@Tag(name = "Payment Management", description = "Fee-only payment model: client pays 8% platform fee via bank transfer, then pays student directly")
 @SecurityRequirement(name = "bearer-jwt")
 public class PaymentController {
 
@@ -50,7 +52,12 @@ public class PaymentController {
 
     @PostMapping("/contracts/{contractId}/release")
     @IsAdmin
-    @Operation(summary = "Release payment to student after completion (ADMIN only)")
+    @Deprecated
+    @Operation(
+            summary = "DEPRECATED - Platform does not hold project funds",
+            description = "This platform uses a fee-only model. Client pays student directly. Platform only collects 8% fee.",
+            deprecated = true
+    )
     public ResponseEntity<BaseResponse> releasePaymentToStudent(@PathVariable Long contractId) {
         Long adminId = securityUtil.getCurrentUserId();
         TransactionDTO transaction = paymentService.releasePaymentToStudent(contractId, adminId);
@@ -59,7 +66,12 @@ public class PaymentController {
 
     @PostMapping("/contracts/{contractId}/refund")
     @IsAdmin
-    @Operation(summary = "Refund payment to client (ADMIN only)")
+    @Deprecated
+    @Operation(
+            summary = "DEPRECATED - Platform fee is non-refundable",
+            description = "Platform fee is non-refundable once verified. For disputes, contact support.",
+            deprecated = true
+    )
     public ResponseEntity<BaseResponse> refundPaymentToClient(
             @PathVariable Long contractId,
             @RequestParam(required = false) String reason) {
@@ -71,7 +83,10 @@ public class PaymentController {
     @GetMapping("/pending")
     @IsManager
     @Operation(summary = "Get all pending payment requests (ADMIN/MANAGER only)")
-    public ResponseEntity<BaseResponse> getPendingPayments(Pageable pageable) {
+    public ResponseEntity<BaseResponse> getPendingPayments(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         Page<PaymentRequestDTO> payments = paymentService.getPendingPayments(pageable);
         return ResponseEntity.ok(new BaseResponse(200, "Pending payments retrieved successfully", payments));
     }
@@ -103,7 +118,9 @@ public class PaymentController {
     @Operation(summary = "Get all transactions for a contract")
     public ResponseEntity<BaseResponse> getContractTransactions(
             @PathVariable Long contractId,
-            Pageable pageable) {
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         Page<TransactionDTO> transactions = paymentService.getContractTransactions(contractId, pageable);
         return ResponseEntity.ok(new BaseResponse(200, "Contract transactions retrieved successfully", transactions));
     }
@@ -111,7 +128,10 @@ public class PaymentController {
     @GetMapping("/transactions")
     @IsAdmin
     @Operation(summary = "Get all transactions (ADMIN only)")
-    public ResponseEntity<BaseResponse> getAllTransactions(Pageable pageable) {
+    public ResponseEntity<BaseResponse> getAllTransactions(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
         Page<TransactionDTO> transactions = paymentService.getAllTransactions(pageable);
         return ResponseEntity.ok(new BaseResponse(200, "All transactions retrieved successfully", transactions));
     }

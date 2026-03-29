@@ -11,6 +11,7 @@ import com.exe202.skillnest.exception.NotFoundException;
 import com.exe202.skillnest.mapper.PaymentRequestMapper;
 import com.exe202.skillnest.mapper.TransactionMapper;
 import com.exe202.skillnest.repository.*;
+import com.exe202.skillnest.service.FileStorageService;
 import com.exe202.skillnest.service.PaymentService;
 import com.exe202.skillnest.util.QRCodeGenerator;
 import lombok.RequiredArgsConstructor;
@@ -41,6 +42,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final PaymentRequestMapper paymentRequestMapper;
     private final TransactionMapper transactionMapper;
     private final QRCodeGenerator qrCodeGenerator;
+    private final FileStorageService fileStorageService;
 
     @Value("${payment.platform-fee-percent:8}")
     private BigDecimal platformFeePercent;
@@ -57,9 +59,6 @@ public class PaymentServiceImpl implements PaymentService {
     @Value("${payment.bank.code:VCB}")
     private String bankCode;
 
-    @Value("${azure.storage.qr-base-url:https://skillnest.blob.core.windows.net/qrcodes/}")
-    private String qrBaseUrl;
-
     private static final BigDecimal HUNDRED = new BigDecimal("100");
 
     @Override
@@ -68,7 +67,7 @@ public class PaymentServiceImpl implements PaymentService {
         log.info("Client {} accepting proposal {} with payment", clientId, proposalId);
 
         // 1. Validate proposal
-        Proposal proposal = proposalRepository.findById(proposalId)
+        Proposal proposal = proposalRepository.findByIdWithLock(proposalId)
                 .orElseThrow(() -> new NotFoundException("Proposal not found"));
 
         if (!proposal.getStatus().equals(ProposalStatus.SUBMITTED)) {
@@ -81,21 +80,25 @@ public class PaymentServiceImpl implements PaymentService {
             throw new ForbiddenException("Only project owner can accept proposals");
         }
 
+        // 3. Validate client is not the student (sanity check)
+        if (proposal.getStudent().getUserId().equals(clientId)) {
+            throw new BadRequestException("Client cannot accept their own proposal");
+        }
+
         // 3. Check if payment request already exists
         if (paymentRequestRepository.findByProposal_ProposalId(proposalId).isPresent()) {
             throw new BadRequestException("Payment request already exists for this proposal");
         }
 
-        // 4. Calculate amounts - CHỈ LẤY 8% PHÍ DUY TRÌ NỀN TẢNG TỪ BUDGETMAX
-        BigDecimal budgetMax = project.getBudgetMax();
-        if (budgetMax == null || budgetMax.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new BadRequestException("Project budgetMax is not set or invalid");
+        // 4. Calculate amounts - FEE-ONLY model: client pays 8% to platform, rest goes directly to student
+        BigDecimal proposedPrice = proposal.getProposedPrice();
+        if (proposedPrice == null || proposedPrice.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new BadRequestException("Proposed price is not set or invalid");
         }
 
-        // Chỉ tính phí nền tảng 8% từ budgetMax
-        BigDecimal platformFee = budgetMax.multiply(platformFeePercent).divide(HUNDRED, 2, RoundingMode.HALF_UP);
-        BigDecimal totalAmount = platformFee; // Client chỉ phải trả phí nền tảng
-        BigDecimal studentAmount = proposal.getProposedPrice(); // Student nhận đúng số tiền đã đề xuất
+        BigDecimal platformFee = proposedPrice.multiply(platformFeePercent).divide(HUNDRED, 2, RoundingMode.HALF_UP);
+        BigDecimal totalAmount = platformFee; // Client only transfers platform fee via QR
+        BigDecimal studentAmount = proposedPrice.subtract(platformFee); // Student receives the rest directly from client
 
         // 5. Generate unique payment reference
         String paymentReference = generatePaymentReference();
@@ -118,6 +121,7 @@ public class PaymentServiceImpl implements PaymentService {
                 .qrCodeUrl(qrCodeUrl)
                 .paymentReference(paymentReference)
                 .bankTransferNote("SKILLNEST " + paymentReference)
+                .expiresAt(LocalDateTime.now().plusHours(24))
                 .build();
 
         paymentRequest = paymentRequestRepository.save(paymentRequest);
@@ -144,7 +148,16 @@ public class PaymentServiceImpl implements PaymentService {
                         .accountName(bankAccountName)
                         .transferNote("SKILLNEST " + paymentReference)
                         .build())
-                .message("Please transfer " + platformFee + " VND (8% platform maintenance fee) to proceed. Contract will be created after payment verification.")
+                .message(String.format(
+                        "Agreed price: %s VND. Platform fee (8%%): %s VND. " +
+                        "Please transfer %s VND to our account. " +
+                        "After verification, contract will be created. " +
+                        "You will then pay %s VND directly to the student.",
+                        proposedPrice.toPlainString(),
+                        platformFee.toPlainString(),
+                        platformFee.toPlainString(),
+                        studentAmount.toPlainString()
+                ))
                 .build();
     }
 
@@ -154,7 +167,7 @@ public class PaymentServiceImpl implements PaymentService {
         log.info("Verifier {} verifying payment request {}", verifierId, paymentRequestId);
 
         // 1. Get payment request
-        PaymentRequest paymentRequest = paymentRequestRepository.findById(paymentRequestId)
+        PaymentRequest paymentRequest = paymentRequestRepository.findByIdWithLock(paymentRequestId)
                 .orElseThrow(() -> new NotFoundException("Payment request not found"));
 
         if (!paymentRequest.getStatus().equals(PaymentStatus.PENDING_PAYMENT)) {
@@ -187,14 +200,17 @@ public class PaymentServiceImpl implements PaymentService {
 
         contract = contractRepository.save(contract);
 
-        // 4. Create escrow deposit transaction
+        // 4. Create platform fee payment transaction (fee-only model)
         Transaction escrowTransaction = Transaction.builder()
                 .contract(contract)
                 .fromUser(paymentRequest.getClient())
-                .toUser(null) // Platform holds the money
-                .type(TransactionType.ESCROW_DEPOSIT)
+                .toUser(null) // Platform receives fee
+                .type(TransactionType.PLATFORM_FEE_PAYMENT)
                 .amount(paymentRequest.getTotalAmount())
-                .description("Client payment deposited to platform escrow for contract #" + contract.getContractId())
+                .description("Platform fee (8%) received from client. Agreed price: " +
+                        paymentRequest.getTotalAmount().add(paymentRequest.getStudentAmount()).toPlainString() +
+                        " VND. Student will receive: " + paymentRequest.getStudentAmount().toPlainString() +
+                        " VND directly from client.")
                 .build();
 
         transactionRepository.save(escrowTransaction);
@@ -217,107 +233,28 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     @Transactional
     public TransactionDTO releasePaymentToStudent(Long contractId, Long adminId) {
-        log.info("Admin {} releasing payment for contract {}", adminId, contractId);
-
-        // 1. Validate contract
-        Contract contract = contractRepository.findById(contractId)
-                .orElseThrow(() -> new NotFoundException("Contract not found"));
-
-        if (!contract.getStatus().equals(ContractStatus.COMPLETED)) {
-            throw new BadRequestException("Contract must be COMPLETED to release payment");
-        }
-
-        // 2. Check if payment already released
-        if (!transactionRepository.findByContract_ContractIdAndType(contractId, TransactionType.PAYOUT).isEmpty()) {
-            throw new BadRequestException("Payment already released for this contract");
-        }
-
-        // 3. Get payment request
-        PaymentRequest paymentRequest = paymentRequestRepository.findByProposal_ProposalId(contract.getProposal().getProposalId())
+        PaymentRequest paymentRequest = paymentRequestRepository.findByProposal_ProposalId(
+                contractRepository.findById(contractId)
+                        .orElseThrow(() -> new NotFoundException("Contract not found"))
+                        .getProposal().getProposalId())
                 .orElseThrow(() -> new NotFoundException("Payment request not found"));
 
-        if (!paymentRequest.getStatus().equals(PaymentStatus.PAID)) {
-            throw new BadRequestException("Payment is not in PAID status");
-        }
-
-        // 4. Create payout transaction to student
-        Transaction payoutTransaction = Transaction.builder()
-                .contract(contract)
-                .fromUser(null) // Platform releases the money
-                .toUser(contract.getStudent())
-                .type(TransactionType.PAYOUT)
-                .amount(paymentRequest.getStudentAmount())
-                .description("Payment released to student for completed contract #" + contractId)
-                .build();
-
-        payoutTransaction = transactionRepository.save(payoutTransaction);
-
-        // 5. Create platform fee transaction
-        Transaction feeTransaction = Transaction.builder()
-                .contract(contract)
-                .fromUser(null)
-                .toUser(null)
-                .type(TransactionType.PLATFORM_FEE)
-                .amount(paymentRequest.getPlatformFee())
-                .description("Platform commission (8%) for contract #" + contractId)
-                .build();
-
-        transactionRepository.save(feeTransaction);
-
-        // 6. Update payment request status
-        paymentRequest.setStatus(PaymentStatus.RELEASED);
-        paymentRequestRepository.save(paymentRequest);
-
-        log.info("Payment released to student: {}", payoutTransaction.getTransactionId());
-
-        return transactionMapper.toDTO(payoutTransaction);
+        throw new BadRequestException(
+                "This platform operates on a fee-only model. " +
+                "The student receives payment (" + paymentRequest.getStudentAmount().toPlainString() +
+                ") directly from the client. " +
+                "Platform does not hold or release project funds."
+        );
     }
 
     @Override
     @Transactional
     public TransactionDTO refundPaymentToClient(Long contractId, Long adminId, String reason) {
-        log.info("Admin {} refunding payment for contract {}", adminId, contractId);
-
-        // 1. Validate contract
-        Contract contract = contractRepository.findById(contractId)
-                .orElseThrow(() -> new NotFoundException("Contract not found"));
-
-        // 2. Check if already refunded or released
-        if (!transactionRepository.findByContract_ContractIdAndType(contractId, TransactionType.REFUND).isEmpty()) {
-            throw new BadRequestException("Payment already refunded for this contract");
-        }
-
-        if (!transactionRepository.findByContract_ContractIdAndType(contractId, TransactionType.PAYOUT).isEmpty()) {
-            throw new BadRequestException("Payment already released to student, cannot refund");
-        }
-
-        // 3. Get payment request
-        PaymentRequest paymentRequest = paymentRequestRepository.findByProposal_ProposalId(contract.getProposal().getProposalId())
-                .orElseThrow(() -> new NotFoundException("Payment request not found"));
-
-        // 4. Create refund transaction
-        Transaction refundTransaction = Transaction.builder()
-                .contract(contract)
-                .fromUser(null) // Platform refunds
-                .toUser(contract.getClient())
-                .type(TransactionType.REFUND)
-                .amount(paymentRequest.getTotalAmount())
-                .description("Refund to client for contract #" + contractId + ". Reason: " + reason)
-                .build();
-
-        refundTransaction = transactionRepository.save(refundTransaction);
-
-        // 5. Update payment request status
-        paymentRequest.setStatus(PaymentStatus.REFUNDED);
-        paymentRequestRepository.save(paymentRequest);
-
-        // 6. Update contract status
-        contract.setStatus(ContractStatus.CANCELLED);
-        contractRepository.save(contract);
-
-        log.info("Payment refunded to client: {}", refundTransaction.getTransactionId());
-
-        return transactionMapper.toDTO(refundTransaction);
+        throw new BadRequestException(
+                "Platform fee is non-refundable once verified. " +
+                "For disputes, both parties' information will be disclosed for direct resolution. " +
+                "Contact support for exceptional cases."
+        );
     }
 
     @Override
@@ -330,7 +267,7 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     @Transactional(readOnly = true)
     public PaymentRequestDTO getPaymentRequestById(Long paymentRequestId) {
-        PaymentRequest paymentRequest = paymentRequestRepository.findById(paymentRequestId)
+        PaymentRequest paymentRequest = paymentRequestRepository.findByIdWithDetails(paymentRequestId)
                 .orElseThrow(() -> new NotFoundException("Payment request not found"));
         return paymentRequestMapper.toDTO(paymentRequest);
     }
@@ -338,7 +275,7 @@ public class PaymentServiceImpl implements PaymentService {
     @Override
     @Transactional(readOnly = true)
     public PaymentRequestDTO getPaymentRequestByProposalId(Long proposalId) {
-        PaymentRequest paymentRequest = paymentRequestRepository.findByProposal_ProposalId(proposalId)
+        PaymentRequest paymentRequest = paymentRequestRepository.findByProposalIdWithDetails(proposalId)
                 .orElseThrow(() -> new NotFoundException("Payment request not found for this proposal"));
         return paymentRequestMapper.toDTO(paymentRequest);
     }
@@ -394,20 +331,11 @@ public class PaymentServiceImpl implements PaymentService {
         try {
             String transferNote = "SKILLNEST " + paymentReference;
             byte[] qrCodeBytes = qrCodeGenerator.generateBankTransferQR(
-                    bankCode,
-                    bankAccountNumber,
-                    bankAccountName,
-                    amount,
-                    transferNote
+                    bankCode, bankAccountNumber, bankAccountName, amount, transferNote
             );
 
-            // Upload to Azure Blob Storage and return URL
             String qrFileName = paymentReference + ".png";
-            return qrBaseUrl + qrFileName;
-
-            // TODO: Implement Azure Blob Storage upload
-            // return azureBlobStorageService.uploadQRCode(qrCodeBytes, qrFileName);
-
+            return fileStorageService.storeBytes(qrCodeBytes, qrFileName, "qr-codes");
         } catch (Exception e) {
             log.error("Failed to generate QR code", e);
             throw new BadRequestException("Failed to generate QR code: " + e.getMessage());

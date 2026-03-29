@@ -1,93 +1,80 @@
 package com.exe202.skillnest.service.impl;
 
+import com.azure.storage.blob.BlobClient;
+import com.azure.storage.blob.BlobContainerClient;
+import com.azure.storage.blob.models.BlobHttpHeaders;
 import com.exe202.skillnest.exception.BadRequestException;
 import com.exe202.skillnest.service.FileStorageService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.UUID;
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class FileStorageServiceImpl implements FileStorageService {
 
-    private final Path fileStorageLocation;
-    private final String baseUrl;
+    private final BlobContainerClient blobContainerClient;
 
-    public FileStorageServiceImpl(
-            @Value("${file.upload-dir:uploads}") String uploadDir,
-            @Value("${file.base-url:http://localhost:8080}") String baseUrl) {
-        this.fileStorageLocation = Paths.get(uploadDir).toAbsolutePath().normalize();
-        this.baseUrl = baseUrl;
-
-        try {
-            Files.createDirectories(this.fileStorageLocation);
-        } catch (Exception ex) {
-            throw new RuntimeException("Could not create upload directory", ex);
-        }
-    }
+    @Value("${azure.storage.base-url:https://skillneststorage.blob.core.windows.net/skillnest-files}")
+    private String baseUrl;
 
     @Override
     public String storeFile(MultipartFile file, String directory) {
-        // Normalize file name
         String originalFileName = StringUtils.cleanPath(file.getOriginalFilename());
 
         try {
-            // Check if the file's name contains invalid characters
             if (originalFileName.contains("..")) {
                 throw new BadRequestException("Filename contains invalid path sequence: " + originalFileName);
             }
 
-            // Generate unique filename
             String fileExtension = "";
             int lastDotIndex = originalFileName.lastIndexOf('.');
             if (lastDotIndex > 0) {
                 fileExtension = originalFileName.substring(lastDotIndex);
             }
-
             String uniqueFileName = UUID.randomUUID().toString() + fileExtension;
 
-            // Create directory if not exists
-            Path targetLocation = fileStorageLocation.resolve(directory);
-            Files.createDirectories(targetLocation);
+            String blobName = directory + "/" + uniqueFileName;
 
-            // Copy file to the target location
-            Path filePath = targetLocation.resolve(uniqueFileName);
-            Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
+            BlobClient blobClient = blobContainerClient.getBlobClient(blobName);
+            blobClient.upload(file.getInputStream(), file.getSize(), true);
 
-            // Return the file URL
-            String fileUrl = baseUrl + "/files/" + directory + "/" + uniqueFileName;
+            BlobHttpHeaders headers = new BlobHttpHeaders()
+                    .setContentType(file.getContentType());
+            blobClient.setHttpHeaders(headers);
 
-            log.info("File uploaded successfully: {}", fileUrl);
+            String fileUrl = baseUrl + "/" + blobName;
+            log.info("File uploaded to Azure: {}", fileUrl);
             return fileUrl;
 
         } catch (IOException ex) {
-            log.error("Failed to store file: {}", originalFileName, ex);
-            throw new BadRequestException("Failed to store file: " + originalFileName);
+            log.error("Failed to upload file to Azure: {}", originalFileName, ex);
+            throw new BadRequestException("Failed to upload file: " + originalFileName);
         }
     }
 
     @Override
     public void deleteFile(String fileUrl) {
         try {
-            // Extract filename from URL
-            String fileName = fileUrl.substring(fileUrl.lastIndexOf('/') + 1);
-            String directory = fileUrl.substring(fileUrl.lastIndexOf("/files/") + 7, fileUrl.lastIndexOf('/'));
+            String blobName = fileUrl.replace(baseUrl + "/", "");
 
-            Path filePath = fileStorageLocation.resolve(directory).resolve(fileName);
-            Files.deleteIfExists(filePath);
-
-            log.info("File deleted successfully: {}", fileUrl);
-        } catch (IOException ex) {
-            log.error("Failed to delete file: {}", fileUrl, ex);
+            BlobClient blobClient = blobContainerClient.getBlobClient(blobName);
+            if (blobClient.exists()) {
+                blobClient.delete();
+                log.info("File deleted from Azure: {}", fileUrl);
+            } else {
+                log.warn("File not found in Azure: {}", fileUrl);
+            }
+        } catch (Exception ex) {
+            log.error("Failed to delete file from Azure: {}", fileUrl, ex);
             throw new BadRequestException("Failed to delete file");
         }
     }
@@ -100,5 +87,28 @@ public class FileStorageServiceImpl implements FileStorageService {
         }
         return urls;
     }
-}
 
+    @Override
+    public String storeBytes(byte[] content, String fileName, String directory) {
+        try {
+            String blobName = directory + "/" + fileName;
+
+            BlobClient blobClient = blobContainerClient.getBlobClient(blobName);
+            blobClient.upload(new ByteArrayInputStream(content), content.length, true);
+
+            if (fileName.endsWith(".png")) {
+                BlobHttpHeaders headers = new BlobHttpHeaders()
+                        .setContentType("image/png");
+                blobClient.setHttpHeaders(headers);
+            }
+
+            String fileUrl = baseUrl + "/" + blobName;
+            log.info("Bytes stored to Azure: {}", fileUrl);
+            return fileUrl;
+
+        } catch (Exception ex) {
+            log.error("Failed to store bytes to Azure: {}", fileName, ex);
+            throw new BadRequestException("Failed to store file: " + fileName);
+        }
+    }
+}

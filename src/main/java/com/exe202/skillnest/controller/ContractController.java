@@ -26,7 +26,12 @@ public class ContractController {
     private final ContractService contractService;
 
     @PostMapping("/proposal/{proposalId}")
-    @Operation(summary = "Create contract from accepted proposal (project owner only)")
+    @Deprecated
+    @Operation(
+            summary = "DEPRECATED - Use /api/payments/proposals/{proposalId}/accept instead",
+            description = "Contract creation now requires payment verification. Use the Payment API flow.",
+            deprecated = true
+    )
     public ResponseEntity<BaseResponse> createContract(
             @PathVariable Long proposalId,
             Authentication authentication) {

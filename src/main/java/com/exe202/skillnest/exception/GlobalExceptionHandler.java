@@ -1,5 +1,8 @@
 package com.exe202.skillnest.exception;
 
+import com.exe202.skillnest.exception.FileUploadException;
+import com.exe202.skillnest.exception.FileTooLargeException;
+import com.exe202.skillnest.exception.InvalidFileTypeException;
 import com.exe202.skillnest.payloads.response.BaseResponse;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.ConstraintViolation;
@@ -82,6 +85,27 @@ public class GlobalExceptionHandler {
         log.warn("Bad request: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                 .body(new BaseResponse(400, ex.getMessage(), null));
+    }
+
+    @ExceptionHandler(FileTooLargeException.class)
+    public ResponseEntity<BaseResponse> handleFileTooLargeException(FileTooLargeException ex) {
+        log.warn("File too large: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
+                .body(new BaseResponse(413, ex.getMessage(), null));
+    }
+
+    @ExceptionHandler(InvalidFileTypeException.class)
+    public ResponseEntity<BaseResponse> handleInvalidFileTypeException(InvalidFileTypeException ex) {
+        log.warn("Invalid file type: {}", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+                .body(new BaseResponse(415, ex.getMessage(), null));
+    }
+
+    @ExceptionHandler(FileUploadException.class)
+    public ResponseEntity<BaseResponse> handleFileUploadException(FileUploadException ex) {
+        log.error("File upload failed: {}", ex.getMessage(), ex);
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new BaseResponse(500, "File upload failed: " + ex.getMessage(), null));
     }
 
     @ExceptionHandler(Exception.class)

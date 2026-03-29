@@ -2,17 +2,14 @@ package com.exe202.skillnest.service.impl;
 
 import com.exe202.skillnest.dto.ContractDTO;
 import com.exe202.skillnest.entity.Contract;
-import com.exe202.skillnest.entity.Conversation;
 import com.exe202.skillnest.entity.Proposal;
 import com.exe202.skillnest.entity.User;
 import com.exe202.skillnest.enums.ContractStatus;
 import com.exe202.skillnest.enums.ProposalStatus;
 import com.exe202.skillnest.exception.BadRequestException;
-import com.exe202.skillnest.exception.ConflictException;
 import com.exe202.skillnest.exception.ForbiddenException;
 import com.exe202.skillnest.exception.NotFoundException;
 import com.exe202.skillnest.repository.ContractRepository;
-import com.exe202.skillnest.repository.ConversationRepository;
 import com.exe202.skillnest.repository.ProposalRepository;
 import com.exe202.skillnest.repository.UserRepository;
 import com.exe202.skillnest.service.ContractService;
@@ -31,7 +28,6 @@ public class ContractServiceImpl implements ContractService {
     private final ContractRepository contractRepository;
     private final ProposalRepository proposalRepository;
     private final UserRepository userRepository;
-    private final ConversationRepository conversationRepository;
 
     @Override
     @Transactional
@@ -52,30 +48,11 @@ public class ContractServiceImpl implements ContractService {
             throw new BadRequestException("Proposal must be accepted first");
         }
 
-        // Check if contract already exists for this proposal
-        if (contractRepository.findByProposalProposalId(proposalId).isPresent()) {
-            throw new ConflictException("Contract already exists for this proposal");
-        }
-
-        Contract contract = Contract.builder()
-                .project(proposal.getProject())
-                .proposal(proposal)
-                .client(proposal.getProject().getClient())
-                .student(proposal.getStudent())
-                .agreedPrice(proposal.getProposedPrice())
-                .currency(proposal.getCurrency())
-                .status(ContractStatus.PENDING)
-                .build();
-
-        contract = contractRepository.save(contract);
-
-        // Automatically create conversation for the contract
-        Conversation conversation = Conversation.builder()
-                .contract(contract)
-                .build();
-        conversationRepository.save(conversation);
-
-        return convertToDTO(contract);
+        throw new BadRequestException(
+                "Direct contract creation is disabled. " +
+                "Please use POST /api/payments/proposals/{proposalId}/accept to initiate payment flow. " +
+                "Contract will be created automatically after payment verification."
+        );
     }
 
     @Override
@@ -149,6 +126,7 @@ public class ContractServiceImpl implements ContractService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<ContractDTO> getMyContracts(String email, Pageable pageable) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new NotFoundException("User not found"));
@@ -158,6 +136,7 @@ public class ContractServiceImpl implements ContractService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public ContractDTO getContractById(Long contractId, String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new NotFoundException("User not found"));

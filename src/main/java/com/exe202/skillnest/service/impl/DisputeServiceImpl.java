@@ -49,6 +49,7 @@ public class DisputeServiceImpl implements DisputeService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<DisputeDTO> getMyDisputes(String email, Pageable pageable) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new NotFoundException("User not found"));
@@ -58,6 +59,7 @@ public class DisputeServiceImpl implements DisputeService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public DisputeDTO getDisputeById(Long disputeId, String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new NotFoundException("User not found"));
@@ -94,6 +96,7 @@ public class DisputeServiceImpl implements DisputeService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<DisputeDTO> getDisputesByContractId(Long contractId, String email, Pageable pageable) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new NotFoundException("User not found"));

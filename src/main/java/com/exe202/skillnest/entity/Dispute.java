@@ -31,6 +31,7 @@ public class Dispute {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String reason;
 
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private DisputeStatus status = DisputeStatus.OPEN;

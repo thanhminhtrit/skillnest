@@ -36,12 +36,14 @@ public class Proposal {
     @Column(name = "proposed_price", precision = 12, scale = 2)
     private BigDecimal proposedPrice;
 
+    @Builder.Default
     @Column(nullable = false, length = 10)
     private String currency = "VND";
 
     @Column(name = "duration_days")
     private Integer durationDays;
 
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private ProposalStatus status = ProposalStatus.SUBMITTED;
@@ -53,4 +55,7 @@ public class Proposal {
     @UpdateTimestamp
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
+
+    @Version
+    private Long version;
 }

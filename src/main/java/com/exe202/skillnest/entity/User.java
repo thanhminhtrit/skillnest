@@ -35,6 +35,7 @@ public class User {
     @Column(name = "avatar_url")
     private String avatarUrl;
 
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private UserStatus status = UserStatus.ACTIVE;
@@ -42,6 +43,7 @@ public class User {
     @Column(length = 30)
     private String phone;
 
+    @Builder.Default
     @Column(name = "token_version", nullable = false)
     private Integer tokenVersion = 0;
 
@@ -59,5 +61,6 @@ public class User {
             joinColumns = @JoinColumn(name = "user_id"),
             inverseJoinColumns = @JoinColumn(name = "role_id")
     )
+    @Builder.Default
     private Set<Role> roles = new HashSet<>();
 }

@@ -32,6 +32,7 @@ public class Message {
     @JoinColumn(name = "sender_id", nullable = false)
     private User sender;
 
+    @Builder.Default
     @Enumerated(EnumType.STRING)
     @Column(name = "type", nullable = false)
     @JdbcTypeCode(SqlTypes.NAMED_ENUM)
@@ -47,12 +48,14 @@ public class Message {
     @Column(name = "sent_at", nullable = false, updatable = false)
     private LocalDateTime sentAt;
 
+    @Builder.Default
     @Column(name = "has_attachment", nullable = false)
     private Boolean hasAttachment = false;
 
     @Column(name = "attachment_urls", columnDefinition = "TEXT")
     private String attachmentUrls; // JSON array of file URLs
 
+    @Builder.Default
     @Column(name = "is_deliverable", nullable = false)
     private Boolean isDeliverable = false;
 
