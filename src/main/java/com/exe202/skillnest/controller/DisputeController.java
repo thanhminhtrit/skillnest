@@ -61,7 +61,14 @@ public class DisputeController {
     }
 
     @PutMapping("/{disputeId}/status")
-    @Operation(summary = "Update dispute status (participants/admin)")
+    @Deprecated
+    @Operation(
+            summary = "DEPRECATED - Use /api/manager/disputes/{disputeId}/status instead",
+            description = "This endpoint is deprecated. Dispute status changes should go through the Manager API. " +
+                    "Participants can still use this to escalate to IN_REVIEW. " +
+                    "RESOLVED/CLOSED/REJECTED requires Admin/Manager role via /api/manager/disputes/{disputeId}/status.",
+            deprecated = true
+    )
     public ResponseEntity<BaseResponse> updateDisputeStatus(
             @PathVariable Long disputeId,
             @RequestParam String status,

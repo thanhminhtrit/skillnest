@@ -21,7 +21,7 @@ public class DisputeMapper {
                 .status(entity.getStatus())
                 .resolvedAt(entity.getResolvedAt())
                 .createdAt(entity.getCreatedAt())
-                .updatedAt(entity.getCreatedAt()) // Note: Dispute entity doesn't have updatedAt, using createdAt
+                .updatedAt(entity.getUpdatedAt())
                 .build();
     }
 }

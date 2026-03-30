@@ -25,12 +25,17 @@ public class ScheduledTasks {
     private final PaymentRequestRepository paymentRequestRepository;
     private final ProposalRepository proposalRepository;
     private final SubscriptionPaymentRequestRepository subPaymentRepo;
+    private final com.exe202.skillnest.service.RatingService ratingService;
+    private final com.exe202.skillnest.service.NotificationService notificationService;
 
-    @Scheduled(fixedRate = 3600000) // Run every hour
+    @Scheduled(fixedRate = 3600000)
     @Transactional
     public void expireOldPaymentRequests() {
+        LocalDateTime now = LocalDateTime.now();
+
+        // Expire contract payment requests
         List<PaymentRequest> expired = paymentRequestRepository
-                .findExpiredPendingPayments(LocalDateTime.now());
+                .findExpiredPendingPayments(now);
 
         for (PaymentRequest pr : expired) {
             pr.setStatus(PaymentStatus.CANCELLED);
@@ -42,27 +47,71 @@ public class ScheduledTasks {
                 proposalRepository.save(proposal);
             }
 
-            log.info("Auto-cancelled expired payment request: {} (reference: {})",
-                    pr.getPaymentRequestId(), pr.getPaymentReference());
+            // Detailed log for audit trail and future notification integration
+            log.warn("AUTO-EXPIRED payment request: id={}, reference={}, clientId={}, clientName={}, " +
+                     "proposalId={}, amount={}, createdAt={}, expiredAt={}. " +
+                     "Proposal reset to SUBMITTED. TODO: Send notification to client.",
+                    pr.getPaymentRequestId(),
+                    pr.getPaymentReference(),
+                    pr.getClient() != null ? pr.getClient().getUserId() : "N/A",
+                    pr.getClient() != null ? pr.getClient().getFullName() : "N/A",
+                    proposal != null ? proposal.getProposalId() : "N/A",
+                    pr.getTotalAmount(),
+                    pr.getCreatedAt(),
+                    pr.getExpiresAt());
+
+            // Notify client about expired payment
+            if (pr.getClient() != null) {
+                notificationService.notify(
+                        pr.getClient().getUserId(),
+                        com.exe202.skillnest.enums.NotificationType.PAYMENT_EXPIRED,
+                        "Payment expired",
+                        "Your payment for reference " + pr.getPaymentReference() + " has expired.",
+                        "PAYMENT",
+                        pr.getPaymentRequestId()
+                );
+            }
         }
 
         if (!expired.isEmpty()) {
-            log.info("Expired {} payment request(s)", expired.size());
+            log.info("Total expired contract payment requests: {}", expired.size());
         }
 
-        // Also expire subscription payment requests
+        // Expire subscription payment requests
         List<SubscriptionPaymentRequest> expiredSubs = subPaymentRepo
-                .findExpiredPendingPayments(LocalDateTime.now());
+                .findExpiredPendingPayments(now);
 
         for (SubscriptionPaymentRequest spr : expiredSubs) {
             spr.setStatus(PaymentStatus.CANCELLED);
             subPaymentRepo.save(spr);
-            log.info("Auto-cancelled expired subscription payment: {} (reference: {})",
-                    spr.getSubPaymentId(), spr.getPaymentReference());
+
+            log.warn("AUTO-EXPIRED subscription payment: id={}, reference={}, userId={}, userName={}, " +
+                     "planName={}, amount={}, createdAt={}, expiredAt={}. " +
+                     "TODO: Send notification to user.",
+                    spr.getSubPaymentId(),
+                    spr.getPaymentReference(),
+                    spr.getUser() != null ? spr.getUser().getUserId() : "N/A",
+                    spr.getUser() != null ? spr.getUser().getFullName() : "N/A",
+                    spr.getPlan() != null ? spr.getPlan().getDisplayName() : "N/A",
+                    spr.getAmount(),
+                    spr.getCreatedAt(),
+                    spr.getExpiresAt());
         }
 
         if (!expiredSubs.isEmpty()) {
-            log.info("Expired {} subscription payment(s)", expiredSubs.size());
+            log.info("Total expired subscription payments: {}", expiredSubs.size());
         }
+    }
+
+    @Scheduled(fixedRate = 86400000) // Run every 24 hours
+    @Transactional
+    public void autoRevealExpiredPendingRatings() {
+        ratingService.autoRevealExpiredPendingRatings();
+    }
+
+    @Scheduled(fixedRate = 86400000) // Run every 24 hours
+    @Transactional
+    public void autoRateExpiredContracts() {
+        ratingService.autoRateExpiredContracts();
     }
 }

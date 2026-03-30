@@ -27,5 +27,8 @@ public class ProfileResponseDTO {
     private List<String> interests;
     private List<String> preferredLocations;
     private List<String> preferredJobTypes;
+
+    private Double averageRating;
+    private Integer totalReviews;
 }
 

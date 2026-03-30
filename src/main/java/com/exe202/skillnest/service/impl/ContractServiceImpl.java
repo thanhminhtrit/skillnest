@@ -9,6 +9,7 @@ import com.exe202.skillnest.enums.ProposalStatus;
 import com.exe202.skillnest.exception.BadRequestException;
 import com.exe202.skillnest.exception.ForbiddenException;
 import com.exe202.skillnest.exception.NotFoundException;
+import com.exe202.skillnest.mapper.ContractMapper;
 import com.exe202.skillnest.repository.ContractRepository;
 import com.exe202.skillnest.repository.ProposalRepository;
 import com.exe202.skillnest.repository.UserRepository;
@@ -28,6 +29,8 @@ public class ContractServiceImpl implements ContractService {
     private final ContractRepository contractRepository;
     private final ProposalRepository proposalRepository;
     private final UserRepository userRepository;
+    private final ContractMapper contractMapper;
+    private final com.exe202.skillnest.service.NotificationService notificationService;
 
     @Override
     @Transactional
@@ -77,7 +80,7 @@ public class ContractServiceImpl implements ContractService {
         contract.setStatus(ContractStatus.ACTIVE);
         contract.setStartAt(LocalDateTime.now());
         contract = contractRepository.save(contract);
-        return convertToDTO(contract);
+        return contractMapper.toDTO(contract);
     }
 
     @Override
@@ -102,7 +105,18 @@ public class ContractServiceImpl implements ContractService {
         contract.setStatus(ContractStatus.COMPLETED);
         contract.setEndAt(LocalDateTime.now());
         contract = contractRepository.save(contract);
-        return convertToDTO(contract);
+
+        // Notify student about completion
+        notificationService.notify(
+                contract.getStudent().getUserId(),
+                com.exe202.skillnest.enums.NotificationType.CONTRACT_COMPLETED,
+                "Contract completed",
+                "Contract for " + contract.getProject().getTitle() + " has been completed. Don't forget to rate!",
+                "CONTRACT",
+                contract.getContractId()
+        );
+
+        return contractMapper.toDTO(contract);
     }
 
     @Override
@@ -122,7 +136,21 @@ public class ContractServiceImpl implements ContractService {
         contract.setStatus(ContractStatus.CANCELLED);
         contract.setEndAt(LocalDateTime.now());
         contract = contractRepository.save(contract);
-        return convertToDTO(contract);
+
+        // Notify the other party about cancellation
+        Long otherPartyId = contract.getClient().getUserId().equals(user.getUserId())
+                ? contract.getStudent().getUserId()
+                : contract.getClient().getUserId();
+        notificationService.notify(
+                otherPartyId,
+                com.exe202.skillnest.enums.NotificationType.CONTRACT_CANCELLED,
+                "Contract cancelled",
+                user.getFullName() + " cancelled the contract for " + contract.getProject().getTitle(),
+                "CONTRACT",
+                contract.getContractId()
+        );
+
+        return contractMapper.toDTO(contract);
     }
 
     @Override
@@ -132,7 +160,7 @@ public class ContractServiceImpl implements ContractService {
                 .orElseThrow(() -> new NotFoundException("User not found"));
 
         return contractRepository.findByClientUserIdOrStudentUserId(user.getUserId(), user.getUserId(), pageable)
-                .map(this::convertToDTO);
+                .map(contractMapper::toDTO);
     }
 
     @Override
@@ -144,31 +172,11 @@ public class ContractServiceImpl implements ContractService {
         Contract contract = contractRepository.findByContractIdAndParticipant(contractId, user.getUserId())
                 .orElseThrow(() -> new NotFoundException("Contract not found or you don't have access"));
 
-        return convertToDTO(contract);
+        return contractMapper.toDTO(contract);
     }
 
     private boolean isParticipant(Contract contract, Long userId) {
         return contract.getClient().getUserId().equals(userId) ||
                contract.getStudent().getUserId().equals(userId);
-    }
-
-    private ContractDTO convertToDTO(Contract contract) {
-        return ContractDTO.builder()
-                .contractId(contract.getContractId())
-                .projectId(contract.getProject().getProjectId())
-                .projectTitle(contract.getProject().getTitle())
-                .proposalId(contract.getProposal().getProposalId())
-                .clientId(contract.getClient().getUserId())
-                .clientName(contract.getClient().getFullName())
-                .studentId(contract.getStudent().getUserId())
-                .studentName(contract.getStudent().getFullName())
-                .agreedPrice(contract.getAgreedPrice())
-                .currency(contract.getCurrency())
-                .startAt(contract.getStartAt())
-                .endAt(contract.getEndAt())
-                .status(contract.getStatus().name())
-                .createdAt(contract.getCreatedAt())
-                .updatedAt(contract.getUpdatedAt())
-                .build();
     }
 }

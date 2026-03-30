@@ -137,6 +137,23 @@ public class SubscriptionServiceImpl implements SubscriptionService {
     }
 
     @Override
+    public void checkAndIncrementInviteUsage(Long userId) {
+        UserSubscription sub = subRepo.findActiveByUserId(userId)
+                .orElseThrow(() -> new BadRequestException("No active subscription"));
+
+        if (!sub.canInvite()) {
+            throw new BadRequestException(
+                    "Invite limit reached. Used: " + sub.getInvitesUsed() +
+                    "/" + (sub.getPlan().getInviteLimit() == null ? "∞" : sub.getPlan().getInviteLimit()) +
+                    ". Upgrade your plan for more invites!"
+            );
+        }
+
+        sub.incrementInviteUsage();
+        subRepo.save(sub);
+    }
+
+    @Override
     public SubscriptionPaymentResponse initiateSubscription(Long userId, Long planId) {
         User user = userRepo.findById(userId)
                 .orElseThrow(() -> new NotFoundException("User not found"));
@@ -277,6 +294,9 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                 .aiMatchingLimit(aiLimit)
                 .aiMatchingUsed(sub.getAiMatchingUsed())
                 .aiMatchingRemaining(aiLimit == null ? null : aiLimit - sub.getAiMatchingUsed())
+                .inviteLimit(plan.getInviteLimit())
+                .invitesUsed(sub.getInvitesUsed())
+                .invitesRemaining(plan.getInviteLimit() == null ? null : plan.getInviteLimit() - sub.getInvitesUsed())
                 .endDate(sub.getEndDate())
                 .status(sub.getStatus().name())
                 .build();
@@ -290,6 +310,7 @@ public class SubscriptionServiceImpl implements SubscriptionService {
                 .price(plan.getPrice())
                 .postLimit(plan.getPostLimit())
                 .aiMatchingLimit(plan.getAiMatchingLimit())
+                .inviteLimit(plan.getInviteLimit())
                 .durationDays(plan.getDurationDays())
                 .build();
     }

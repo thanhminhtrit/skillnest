@@ -28,6 +28,7 @@ public class ProposalServiceImpl implements ProposalService {
     private final ProposalRepository proposalRepository;
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
+    private final com.exe202.skillnest.service.NotificationService notificationService;
 
     @Override
     @Transactional
@@ -59,6 +60,17 @@ public class ProposalServiceImpl implements ProposalService {
                 .build();
 
         proposal = proposalRepository.save(proposal);
+
+        // Notify project owner about new proposal
+        notificationService.notify(
+                project.getClient().getUserId(),
+                com.exe202.skillnest.enums.NotificationType.NEW_PROPOSAL,
+                "New proposal received",
+                student.getFullName() + " submitted a proposal for: " + project.getTitle(),
+                "PROPOSAL",
+                proposal.getProposalId()
+        );
+
         return convertToDTO(proposal);
     }
 
@@ -135,6 +147,17 @@ public class ProposalServiceImpl implements ProposalService {
 
         proposal.setStatus(ProposalStatus.REJECTED);
         proposal = proposalRepository.save(proposal);
+
+        // Notify student about rejection
+        notificationService.notify(
+                proposal.getStudent().getUserId(),
+                com.exe202.skillnest.enums.NotificationType.PROPOSAL_REJECTED,
+                "Proposal rejected",
+                "Your proposal for " + proposal.getProject().getTitle() + " was rejected.",
+                "PROPOSAL",
+                proposal.getProposalId()
+        );
+
         return convertToDTO(proposal);
     }
 

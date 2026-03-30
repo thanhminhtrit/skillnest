@@ -3,7 +3,12 @@ package com.exe202.skillnest.service.impl;
 import com.azure.storage.blob.BlobClient;
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.models.BlobHttpHeaders;
+import com.exe202.skillnest.entity.FileMetadata;
+import com.exe202.skillnest.entity.User;
+import com.exe202.skillnest.enums.RelatedEntityType;
 import com.exe202.skillnest.exception.BadRequestException;
+import com.exe202.skillnest.exception.ForbiddenException;
+import com.exe202.skillnest.repository.FileMetadataRepository;
 import com.exe202.skillnest.service.FileStorageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +19,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Service
@@ -22,6 +28,7 @@ import java.util.UUID;
 public class FileStorageServiceImpl implements FileStorageService {
 
     private final BlobContainerClient blobContainerClient;
+    private final FileMetadataRepository fileMetadataRepository;
 
     @Value("${azure.storage.base-url:https://skillneststorage.blob.core.windows.net/skillnest-files}")
     private String baseUrl;
@@ -58,6 +65,41 @@ public class FileStorageServiceImpl implements FileStorageService {
         } catch (IOException ex) {
             log.error("Failed to upload file to Azure: {}", originalFileName, ex);
             throw new BadRequestException("Failed to upload file: " + originalFileName);
+        }
+    }
+
+    @Override
+    public String storeFile(MultipartFile file, String directory, User uploadedBy, RelatedEntityType entityType) {
+        String fileUrl = storeFile(file, directory);
+
+        FileMetadata metadata = FileMetadata.builder()
+                .fileUrl(fileUrl)
+                .fileName(fileUrl.substring(fileUrl.lastIndexOf('/') + 1))
+                .originalFileName(StringUtils.cleanPath(file.getOriginalFilename()))
+                .contentType(file.getContentType())
+                .fileSize(file.getSize())
+                .folder(directory)
+                .uploadedBy(uploadedBy)
+                .relatedEntityType(entityType)
+                .build();
+        fileMetadataRepository.save(metadata);
+
+        return fileUrl;
+    }
+
+    @Override
+    public void deleteFile(String fileUrl, Long currentUserId) {
+        FileMetadata metadata = fileMetadataRepository.findByFileUrl(fileUrl).orElse(null);
+
+        if (metadata != null && !metadata.getUploadedBy().getUserId().equals(currentUserId)) {
+            throw new ForbiddenException("You can only delete your own files");
+        }
+
+        deleteFile(fileUrl);
+
+        if (metadata != null) {
+            metadata.setDeletedAt(LocalDateTime.now());
+            fileMetadataRepository.save(metadata);
         }
     }
 

@@ -5,6 +5,7 @@ import com.exe202.skillnest.entity.Contract;
 import com.exe202.skillnest.entity.Dispute;
 import com.exe202.skillnest.entity.User;
 import com.exe202.skillnest.enums.DisputeStatus;
+import com.exe202.skillnest.exception.BadRequestException;
 import com.exe202.skillnest.exception.ForbiddenException;
 import com.exe202.skillnest.exception.NotFoundException;
 import com.exe202.skillnest.payloads.request.CreateDisputeRequest;
@@ -27,6 +28,7 @@ public class DisputeServiceImpl implements DisputeService {
     private final DisputeRepository disputeRepository;
     private final ContractRepository contractRepository;
     private final UserRepository userRepository;
+    private final com.exe202.skillnest.service.NotificationService notificationService;
 
     @Override
     @Transactional
@@ -45,6 +47,20 @@ public class DisputeServiceImpl implements DisputeService {
                 .build();
 
         dispute = disputeRepository.save(dispute);
+
+        // Notify the other party about the dispute
+        Long otherPartyId = contract.getClient().getUserId().equals(user.getUserId())
+                ? contract.getStudent().getUserId()
+                : contract.getClient().getUserId();
+        notificationService.notify(
+                otherPartyId,
+                com.exe202.skillnest.enums.NotificationType.DISPUTE_OPENED,
+                "Dispute opened",
+                user.getFullName() + " opened a dispute on your contract",
+                "DISPUTE",
+                dispute.getDisputeId()
+        );
+
         return convertToDTO(dispute);
     }
 
@@ -79,12 +95,38 @@ public class DisputeServiceImpl implements DisputeService {
         Dispute dispute = disputeRepository.findById(disputeId)
                 .orElseThrow(() -> new NotFoundException("Dispute not found"));
 
-        // For MVP, allow participants to update status (in production, this should be admin only)
-        if (!isParticipant(dispute, user.getUserId())) {
-            throw new ForbiddenException("You don't have permission to update this dispute");
+        DisputeStatus newStatus = DisputeStatus.valueOf(status);
+
+        // Check permissions based on target status
+        boolean isAdminOrManager = user.getRoles().stream()
+                .anyMatch(role -> role.getName().equals("ADMIN") || role.getName().equals("MANAGER"));
+        boolean isParticipant = isParticipant(dispute, user.getUserId());
+
+        // RESOLVED, CLOSED, REJECTED — only admin/manager can set these
+        if (newStatus == DisputeStatus.RESOLVED ||
+            newStatus == DisputeStatus.CLOSED ||
+            newStatus == DisputeStatus.REJECTED) {
+
+            if (!isAdminOrManager) {
+                throw new ForbiddenException(
+                        "Only Admin or Manager can set dispute status to " + newStatus +
+                        ". Participants can only set status to IN_REVIEW.");
+            }
         }
 
-        DisputeStatus newStatus = DisputeStatus.valueOf(status);
+        // IN_REVIEW — participants or admin/manager can set this
+        if (newStatus == DisputeStatus.IN_REVIEW) {
+            if (!isParticipant && !isAdminOrManager) {
+                throw new ForbiddenException("You don't have permission to update this dispute");
+            }
+        }
+
+        // OPEN — nobody should be able to reopen (create a new dispute instead)
+        if (newStatus == DisputeStatus.OPEN) {
+            throw new BadRequestException(
+                    "Cannot set status back to OPEN. Create a new dispute instead.");
+        }
+
         dispute.setStatus(newStatus);
 
         if (newStatus == DisputeStatus.RESOLVED || newStatus == DisputeStatus.CLOSED) {
@@ -123,6 +165,7 @@ public class DisputeServiceImpl implements DisputeService {
                 .status(dispute.getStatus())
                 .createdAt(dispute.getCreatedAt())
                 .resolvedAt(dispute.getResolvedAt())
+                .updatedAt(dispute.getUpdatedAt())
                 .build();
     }
 }

@@ -15,6 +15,7 @@ public interface SubscriptionService {
     SubscriptionDTO subscribe(Long userId, Long planId);
     void checkAndIncrementPostUsage(Long userId);
     void checkAndIncrementAiMatchingUsage(Long userId);
+    void checkAndIncrementInviteUsage(Long userId);
 
     /**
      * Initiate subscription payment — returns QR code for payment.

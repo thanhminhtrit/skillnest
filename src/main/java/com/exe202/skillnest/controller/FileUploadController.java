@@ -1,6 +1,10 @@
 package com.exe202.skillnest.controller;
 
+import com.exe202.skillnest.entity.User;
+import com.exe202.skillnest.enums.RelatedEntityType;
+import com.exe202.skillnest.exception.NotFoundException;
 import com.exe202.skillnest.payloads.response.BaseResponse;
+import com.exe202.skillnest.repository.UserRepository;
 import com.exe202.skillnest.service.FileStorageService;
 import com.exe202.skillnest.util.FileValidator;
 import io.swagger.v3.oas.annotations.Operation;
@@ -9,6 +13,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -24,17 +29,20 @@ public class FileUploadController {
 
     private final FileStorageService fileStorageService;
     private final FileValidator fileValidator;
+    private final UserRepository userRepository;
 
     @PostMapping("/upload/avatar")
     @Operation(summary = "Upload user avatar (images only)")
     public ResponseEntity<BaseResponse> uploadAvatar(
-            @RequestParam("file") MultipartFile file) {
+            @RequestParam("file") MultipartFile file,
+            Authentication authentication) {
 
-        // Validate image
         fileValidator.validateImage(file);
 
-        // Store file
-        String fileUrl = fileStorageService.storeFile(file, "avatars");
+        User currentUser = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new NotFoundException("User not found"));
+
+        String fileUrl = fileStorageService.storeFile(file, "avatars", currentUser, RelatedEntityType.AVATAR);
 
         Map<String, String> response = new HashMap<>();
         response.put("fileUrl", fileUrl);
@@ -48,13 +56,15 @@ public class FileUploadController {
     @PostMapping("/upload/chat-file")
     @Operation(summary = "Upload file for chat messages (images, documents)")
     public ResponseEntity<BaseResponse> uploadChatFile(
-            @RequestParam("file") MultipartFile file) {
+            @RequestParam("file") MultipartFile file,
+            Authentication authentication) {
 
-        // Validate chat file
         fileValidator.validateChatFile(file);
 
-        // Store file
-        String fileUrl = fileStorageService.storeFile(file, "chat-files");
+        User currentUser = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new NotFoundException("User not found"));
+
+        String fileUrl = fileStorageService.storeFile(file, "chat-files", currentUser, RelatedEntityType.CHAT);
 
         Map<String, String> response = new HashMap<>();
         response.put("fileUrl", fileUrl);
@@ -69,13 +79,15 @@ public class FileUploadController {
     @PostMapping("/upload/document")
     @Operation(summary = "Upload document (PDF, Word, Excel)")
     public ResponseEntity<BaseResponse> uploadDocument(
-            @RequestParam("file") MultipartFile file) {
+            @RequestParam("file") MultipartFile file,
+            Authentication authentication) {
 
-        // Validate document
         fileValidator.validateDocument(file);
 
-        // Store file
-        String fileUrl = fileStorageService.storeFile(file, "documents");
+        User currentUser = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new NotFoundException("User not found"));
+
+        String fileUrl = fileStorageService.storeFile(file, "documents", currentUser, RelatedEntityType.PROJECT);
 
         Map<String, String> response = new HashMap<>();
         response.put("fileUrl", fileUrl);
@@ -90,13 +102,15 @@ public class FileUploadController {
     @PostMapping("/upload/dispute-evidence")
     @Operation(summary = "Upload evidence for dispute (images, documents)")
     public ResponseEntity<BaseResponse> uploadDisputeEvidence(
-            @RequestParam("file") MultipartFile file) {
+            @RequestParam("file") MultipartFile file,
+            Authentication authentication) {
 
-        // Validate dispute file
         fileValidator.validateDisputeFile(file);
 
-        // Store file
-        String fileUrl = fileStorageService.storeFile(file, "dispute-evidence");
+        User currentUser = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new NotFoundException("User not found"));
+
+        String fileUrl = fileStorageService.storeFile(file, "dispute-evidence", currentUser, RelatedEntityType.DISPUTE);
 
         Map<String, String> response = new HashMap<>();
         response.put("fileUrl", fileUrl);
@@ -112,13 +126,18 @@ public class FileUploadController {
     @Operation(summary = "Upload multiple files at once")
     public ResponseEntity<BaseResponse> uploadMultipleFiles(
             @RequestParam("files") MultipartFile[] files,
-            @RequestParam(defaultValue = "documents") String directory) {
+            @RequestParam(defaultValue = "documents") String directory,
+            Authentication authentication) {
 
-        // Validate multiple files
         fileValidator.validateMultipleFiles(files, 10, 50 * 1024 * 1024); // Max 10 files, 50MB total
 
-        // Store files
-        String[] fileUrls = fileStorageService.storeMultipleFiles(files, directory);
+        User currentUser = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new NotFoundException("User not found"));
+
+        String[] fileUrls = new String[files.length];
+        for (int i = 0; i < files.length; i++) {
+            fileUrls[i] = fileStorageService.storeFile(files[i], directory, currentUser, RelatedEntityType.PROJECT);
+        }
 
         Map<String, Object> response = new HashMap<>();
         response.put("fileUrls", fileUrls);
@@ -131,12 +150,15 @@ public class FileUploadController {
     @DeleteMapping("/delete")
     @Operation(summary = "Delete uploaded file")
     public ResponseEntity<BaseResponse> deleteFile(
-            @RequestParam("fileUrl") String fileUrl) {
+            @RequestParam("fileUrl") String fileUrl,
+            Authentication authentication) {
 
-        fileStorageService.deleteFile(fileUrl);
+        User currentUser = userRepository.findByEmail(authentication.getName())
+                .orElseThrow(() -> new NotFoundException("User not found"));
+
+        fileStorageService.deleteFile(fileUrl, currentUser.getUserId());
 
         return ResponseEntity.ok(
                 new BaseResponse(200, "File deleted successfully", null));
     }
 }
-

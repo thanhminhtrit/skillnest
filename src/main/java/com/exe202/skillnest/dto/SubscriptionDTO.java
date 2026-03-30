@@ -22,6 +22,9 @@ public class SubscriptionDTO {
     private Integer aiMatchingLimit;
     private Integer aiMatchingUsed;
     private Integer aiMatchingRemaining;
+    private Integer inviteLimit;
+    private Integer invitesUsed;
+    private Integer invitesRemaining;
     private LocalDateTime endDate;
     private String status;
 }

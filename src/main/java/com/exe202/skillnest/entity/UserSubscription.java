@@ -39,6 +39,9 @@ public class UserSubscription {
     @Builder.Default
     private Integer aiMatchingUsed = 0;
 
+    @Builder.Default
+    private Integer invitesUsed = 0;
+
     private LocalDateTime startDate;
 
     private LocalDateTime endDate;
@@ -71,4 +74,12 @@ public class UserSubscription {
     public void incrementPostUsage() { this.postsUsed++; }
 
     public void incrementAiMatchingUsage() { this.aiMatchingUsed++; }
+
+    public boolean canInvite() {
+        return status == com.exe202.skillnest.enums.SubscriptionStatus.ACTIVE &&
+               java.time.LocalDateTime.now().isBefore(endDate) &&
+               (plan.getInviteLimit() == null || invitesUsed < plan.getInviteLimit());
+    }
+
+    public void incrementInviteUsage() { this.invitesUsed++; }
 }

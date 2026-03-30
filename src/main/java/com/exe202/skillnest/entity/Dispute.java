@@ -4,6 +4,7 @@ import com.exe202.skillnest.enums.DisputeStatus;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
 
 import java.time.LocalDateTime;
 
@@ -42,4 +43,8 @@ public class Dispute {
 
     @Column(name = "resolved_at")
     private LocalDateTime resolvedAt;
+
+    @UpdateTimestamp
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
 }

@@ -18,5 +18,6 @@ public class SubscriptionPlanDTO {
     private BigDecimal price;
     private Integer postLimit;
     private Integer aiMatchingLimit;
+    private Integer inviteLimit;
     private Integer durationDays;
 }

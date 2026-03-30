@@ -9,6 +9,7 @@ import com.exe202.skillnest.service.AiMatchingService;
 import com.exe202.skillnest.util.SecurityUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -50,5 +51,18 @@ public class AiMatchingController {
 
         return ResponseEntity.ok(new BaseResponse(200,
                 "Found " + response.getTotal() + " matching projects", response));
+    }
+
+    @PostMapping("/invite")
+    @IsClient
+    @Operation(summary = "Invite a student to apply for project (CLIENT only)",
+               description = "After using AI matching to find students, client can invite a specific student. " +
+                       "Limited by subscription plan (FREE: 3, BASIC: 15, PRO: 50 per month).",
+               security = @SecurityRequirement(name = "bearer-jwt"))
+    public ResponseEntity<BaseResponse> inviteStudent(
+            @Valid @RequestBody com.exe202.skillnest.dto.InviteStudentRequest request) {
+        Long clientId = securityUtil.getCurrentUserId();
+        aiMatchingService.inviteStudent(request.getProjectId(), request.getStudentId(), clientId);
+        return ResponseEntity.ok(new BaseResponse(200, "Student invited successfully", null));
     }
 }

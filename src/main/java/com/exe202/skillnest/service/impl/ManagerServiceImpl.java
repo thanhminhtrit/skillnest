@@ -32,6 +32,7 @@ public class ManagerServiceImpl implements ManagerService {
     private final ContractRepository contractRepository;
     private final DisputeMapper disputeMapper;
     private final MessageMapper messageMapper;
+    private final com.exe202.skillnest.service.NotificationService notificationService;
 
     @Override
     @Transactional(readOnly = true)
@@ -65,6 +66,17 @@ public class ManagerServiceImpl implements ManagerService {
 
         dispute.setStatus(newStatus);
         dispute = disputeRepository.save(dispute);
+
+        // Notify both parties about dispute status change
+        Long clientId = dispute.getContract().getClient().getUserId();
+        Long studentId = dispute.getContract().getStudent().getUserId();
+        String statusMsg = "Dispute status updated to " + newStatus.name();
+        notificationService.notify(clientId,
+                com.exe202.skillnest.enums.NotificationType.DISPUTE_RESOLVED,
+                "Dispute update", statusMsg, "DISPUTE", disputeId);
+        notificationService.notify(studentId,
+                com.exe202.skillnest.enums.NotificationType.DISPUTE_RESOLVED,
+                "Dispute update", statusMsg, "DISPUTE", disputeId);
 
         log.info("Dispute status updated successfully: {}", disputeId);
         return disputeMapper.toDTO(dispute);
@@ -107,8 +119,8 @@ public class ManagerServiceImpl implements ManagerService {
         Message message = Message.builder()
                 .conversation(conversation)
                 .sender(manager)
-                .content("SYSTEM: " + content)
-                .type(MessageType.TEXT)
+                .content(content)
+                .type(MessageType.SYSTEM)
                 .sentAt(LocalDateTime.now())
                 .build();
 

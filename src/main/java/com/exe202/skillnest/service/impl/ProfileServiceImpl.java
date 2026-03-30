@@ -27,6 +27,7 @@ public class ProfileServiceImpl implements ProfileService {
     private final UserRepository userRepository;
     private final UserProfileRepository userProfileRepository;
     private final JobApplicationRepository jobApplicationRepository;
+    private final com.exe202.skillnest.repository.RatingRepository ratingRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -55,6 +56,8 @@ public class ProfileServiceImpl implements ProfileService {
                 .interests(profile.getInterests() != null ? profile.getInterests() : new ArrayList<>())
                 .preferredLocations(profile.getPreferredLocations() != null ? profile.getPreferredLocations() : new ArrayList<>())
                 .preferredJobTypes(profile.getPreferredJobTypes() != null ? profile.getPreferredJobTypes() : new ArrayList<>())
+                .averageRating(ratingRepository.findAverageScoreByRevieweeId(userId))
+                .totalReviews(ratingRepository.countVisibleByRevieweeId(userId))
                 .build();
     }
 

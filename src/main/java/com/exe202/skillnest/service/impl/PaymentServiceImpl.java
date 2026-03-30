@@ -43,6 +43,7 @@ public class PaymentServiceImpl implements PaymentService {
     private final TransactionMapper transactionMapper;
     private final QRCodeGenerator qrCodeGenerator;
     private final FileStorageService fileStorageService;
+    private final com.exe202.skillnest.service.NotificationService notificationService;
 
     @Value("${payment.platform-fee-percent:8}")
     private BigDecimal platformFeePercent;
@@ -129,6 +130,16 @@ public class PaymentServiceImpl implements PaymentService {
         // 8. Update proposal status to ACCEPTED
         proposal.setStatus(ProposalStatus.ACCEPTED);
         proposalRepository.save(proposal);
+
+        // Notify student that their proposal was accepted
+        notificationService.notify(
+                proposal.getStudent().getUserId(),
+                com.exe202.skillnest.enums.NotificationType.PROPOSAL_ACCEPTED,
+                "Proposal accepted!",
+                "Your proposal for " + project.getTitle() + " was accepted. Payment is being processed.",
+                "PROPOSAL",
+                proposal.getProposalId()
+        );
 
         log.info("Payment request created: {} - Platform fee only: {}", paymentRequest.getPaymentRequestId(), platformFee);
 
@@ -224,6 +235,24 @@ public class PaymentServiceImpl implements PaymentService {
                 .contract(contract)
                 .build();
         conversationRepository.save(conversation);
+
+        // Notify both parties about contract creation
+        notificationService.notify(
+                paymentRequest.getClient().getUserId(),
+                com.exe202.skillnest.enums.NotificationType.CONTRACT_CREATED,
+                "Contract created",
+                "Contract for " + project.getTitle() + " is now active. You can start chatting.",
+                "CONTRACT",
+                contract.getContractId()
+        );
+        notificationService.notify(
+                proposal.getStudent().getUserId(),
+                com.exe202.skillnest.enums.NotificationType.CONTRACT_CREATED,
+                "Contract created",
+                "Contract for " + project.getTitle() + " is now active. You can start chatting.",
+                "CONTRACT",
+                contract.getContractId()
+        );
 
         log.info("Payment verified and contract created: {}", contract.getContractId());
 

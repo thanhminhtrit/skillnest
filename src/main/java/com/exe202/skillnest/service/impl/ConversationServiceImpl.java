@@ -30,6 +30,7 @@ public class ConversationServiceImpl implements ConversationService {
     private final MessageRepository messageRepository;
     private final ContractRepository contractRepository;
     private final UserRepository userRepository;
+    private final com.exe202.skillnest.service.NotificationService notificationService;
 
     @Override
     @Transactional
@@ -89,6 +90,20 @@ public class ConversationServiceImpl implements ConversationService {
                 .build();
 
         message = messageRepository.save(message);
+
+        // Notify the other party about new message
+        Long recipientId = conversation.getContract().getClient().getUserId().equals(sender.getUserId())
+                ? conversation.getContract().getStudent().getUserId()
+                : conversation.getContract().getClient().getUserId();
+        notificationService.notify(
+                recipientId,
+                com.exe202.skillnest.enums.NotificationType.NEW_MESSAGE,
+                "New message",
+                sender.getFullName() + " sent you a message",
+                "CONVERSATION",
+                conversationId
+        );
+
         return convertToMessageDTO(message);
     }
 

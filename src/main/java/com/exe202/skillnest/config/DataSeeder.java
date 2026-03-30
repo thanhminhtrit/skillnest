@@ -40,6 +40,7 @@ public class DataSeeder implements ApplicationRunner {
                         .price(BigDecimal.ZERO)
                         .postLimit(1)
                         .aiMatchingLimit(3)
+                        .inviteLimit(3)
                         .durationDays(30)
                         .isActive(true)
                         .build(),
@@ -49,6 +50,7 @@ public class DataSeeder implements ApplicationRunner {
                         .price(new BigDecimal("199000"))
                         .postLimit(15)
                         .aiMatchingLimit(30)
+                        .inviteLimit(15)
                         .durationDays(30)
                         .isActive(true)
                         .build(),
@@ -58,6 +60,7 @@ public class DataSeeder implements ApplicationRunner {
                         .price(new BigDecimal("399000"))
                         .postLimit(null)
                         .aiMatchingLimit(100)
+                        .inviteLimit(50)
                         .durationDays(30)
                         .isActive(true)
                         .build()

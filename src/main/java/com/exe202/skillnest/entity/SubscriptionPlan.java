@@ -31,6 +31,8 @@ public class SubscriptionPlan {
 
     private Integer aiMatchingLimit;
 
+    private Integer inviteLimit;
+
     @Builder.Default
     private Integer durationDays = 30;
 

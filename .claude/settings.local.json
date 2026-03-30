@@ -3,7 +3,17 @@
     "allow": [
       "Bash(cd:*)",
       "Bash(mvn compile:*)",
-      "Bash(./mvnw compile:*)"
+      "Bash(./mvnw compile:*)",
+      "Bash(\"D:\\\\FPT_U\\\\HK8\\\\EXE2\\\\skillnest\\\\.env\":*)",
+      "Bash(mvn clean:*)",
+      "Bash(./mvnw clean:*)",
+      "Bash(jar tf:*)",
+      "Bash(jar xf:*)",
+      "Read(//c/Users/Admin/.m2/repository/me/paulschwarz/spring-dotenv/4.0.0/**)",
+      "Bash(jar xvf:*)",
+      "Bash(unzip -p ~/.m2/repository/me/paulschwarz/spring-dotenv/4.0.0/spring-dotenv-4.0.0.jar META-INF/spring.factories)",
+      "Bash(python3:*)",
+      "Bash(python:*)"
     ]
   }
 }

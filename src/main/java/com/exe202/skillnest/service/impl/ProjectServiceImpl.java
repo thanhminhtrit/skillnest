@@ -322,7 +322,7 @@ public class ProjectServiceImpl implements ProjectService {
             long hours = duration.toHours();
             if (hours == 0) {
                 long minutes = duration.toMinutes();
-                return "��ăng " + minutes + " phút trước";
+                return "Đăng " + minutes + " phút trước";
             }
             return "Đăng " + hours + " giờ trước";
         } else if (days == 1) {

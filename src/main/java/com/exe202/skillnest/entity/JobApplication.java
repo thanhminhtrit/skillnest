@@ -14,6 +14,15 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+/**
+ * @deprecated This entity is from an earlier design phase.
+ * The platform uses {@link Proposal} as the primary application mechanism.
+ * Student applies to a Project by submitting a Proposal.
+ * This entity is kept for backward compatibility with ProfileService stats
+ * but should not be used for new features.
+ * Future: migrate profile stats to use Proposal data instead.
+ */
+@Deprecated
 public class JobApplication {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

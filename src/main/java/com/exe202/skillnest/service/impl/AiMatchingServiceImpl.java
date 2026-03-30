@@ -19,7 +19,9 @@ import com.exe202.skillnest.service.AiMatchingService;
 import com.exe202.skillnest.service.OpenAIService;
 import com.exe202.skillnest.service.ProfileService;
 import com.exe202.skillnest.service.SubscriptionService;
+import com.exe202.skillnest.util.RateLimiter;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,6 +39,7 @@ import java.util.stream.Collectors;
 @Service
 @Transactional
 @RequiredArgsConstructor
+@Slf4j
 public class AiMatchingServiceImpl implements AiMatchingService {
 
     private final OpenAIService openAIService;
@@ -48,10 +51,16 @@ public class AiMatchingServiceImpl implements AiMatchingService {
     private final ProposalRepository proposalRepo;
     private final AiMatchingHistoryRepository historyRepo;
     private final UserSubscriptionRepository subRepo;
+    private final RateLimiter rateLimiter;
+    private final com.exe202.skillnest.repository.RatingRepository ratingRepository;
+    private final com.exe202.skillnest.service.NotificationService notificationService;
+    private final com.exe202.skillnest.repository.NotificationRepository notificationRepository;
 
     @Override
     public StudentMatchingResponse findBestStudents(Long projectId, Long userId, int page, int limit) {
         long start = System.currentTimeMillis();
+
+        rateLimiter.checkRateLimit("ai-matching:" + userId);
 
         // 1. Check quota
         subscriptionService.checkAndIncrementAiMatchingUsage(userId);
@@ -95,7 +104,15 @@ public class AiMatchingServiceImpl implements AiMatchingService {
                     double gpaBonus = (profile.getGpa() != null && profile.getGpa() >= 3.0)
                             ? (profile.getGpa() - 3.0) / 10.0 : 0;
 
-                    double totalScore = Math.min(1.0, skillScore * 0.85 + gpaBonus + 0.05);
+                    // Rating bonus: students with good ratings get a boost
+                    double ratingBonus = 0;
+                    Double avgRating = ratingRepository.findAverageScoreByRevieweeId(student.getUserId());
+                    Integer totalReviews = ratingRepository.countVisibleByRevieweeId(student.getUserId());
+                    if (avgRating != null && totalReviews != null && totalReviews > 0) {
+                        ratingBonus = (avgRating - 3.0) / 10.0; // range: -0.2 to +0.2
+                    }
+
+                    double totalScore = Math.min(1.0, skillScore * 0.70 + gpaBonus + ratingBonus + 0.05);
 
                     List<String> matchingSkills = studentSkills.stream()
                             .filter(projectSkills::contains)
@@ -175,6 +192,8 @@ public class AiMatchingServiceImpl implements AiMatchingService {
     public ProjectMatchingResponse findBestProjects(Long userId, int page, int limit) {
         long start = System.currentTimeMillis();
 
+        rateLimiter.checkRateLimit("ai-matching:" + userId);
+
         // 1. Check quota
         subscriptionService.checkAndIncrementAiMatchingUsage(userId);
 
@@ -210,7 +229,15 @@ public class AiMatchingServiceImpl implements AiMatchingService {
                     double skillScore = projectSkillNames.isEmpty() ? 0.5
                             : (double) matchCount / projectSkillNames.size();
 
-                    double totalScore = Math.min(1.0, skillScore * 0.9 + 0.05);
+                    // Rating bonus: clients with good ratings get a boost
+                    double ratingBonus = 0;
+                    Double avgRating = ratingRepository.findAverageScoreByRevieweeId(project.getClient().getUserId());
+                    Integer totalReviews = ratingRepository.countVisibleByRevieweeId(project.getClient().getUserId());
+                    if (avgRating != null && totalReviews != null && totalReviews > 0) {
+                        ratingBonus = (avgRating - 3.0) / 10.0;
+                    }
+
+                    double totalScore = Math.min(1.0, skillScore * 0.75 + ratingBonus + 0.05);
 
                     List<String> matchingSkills = studentSkills.stream()
                             .filter(projectSkillNames::contains)
@@ -302,6 +329,57 @@ public class AiMatchingServiceImpl implements AiMatchingService {
                 .page(page)
                 .limit(limit)
                 .build();
+    }
+
+    @Override
+    public void inviteStudent(Long projectId, Long studentId, Long clientId) {
+        // 1. Check subscription invite quota
+        subscriptionService.checkAndIncrementInviteUsage(clientId);
+
+        // 2. Validate project ownership
+        Project project = projectRepo.findById(projectId)
+                .orElseThrow(() -> new NotFoundException("Project not found"));
+
+        if (!project.getClient().getUserId().equals(clientId)) {
+            throw new com.exe202.skillnest.exception.ForbiddenException("Only project owner can invite students");
+        }
+
+        // 3. Validate student exists
+        User student = userRepo.findById(studentId)
+                .orElseThrow(() -> new NotFoundException("Student not found"));
+
+        // 4. Check if already invited (prevent spam)
+        boolean alreadyInvited = notificationRepository
+                .existsByRecipient_UserIdAndTypeAndRelatedEntityTypeAndRelatedEntityId(
+                        studentId,
+                        com.exe202.skillnest.enums.NotificationType.AI_MATCH_INVITATION,
+                        "PROJECT",
+                        projectId);
+
+        if (alreadyInvited) {
+            throw new com.exe202.skillnest.exception.ConflictException(
+                    "You have already invited this student for this project");
+        }
+
+        // 5. Check if student already submitted proposal
+        if (proposalRepo.existsByProjectProjectIdAndStudentUserId(projectId, studentId)) {
+            throw new com.exe202.skillnest.exception.BadRequestException(
+                    "This student has already submitted a proposal for this project");
+        }
+
+        // 6. Send notification
+        String clientName = project.getClient().getFullName();
+        notificationService.notify(
+                studentId,
+                com.exe202.skillnest.enums.NotificationType.AI_MATCH_INVITATION,
+                "You've been invited to apply!",
+                clientName + " is interested in your profile for project: " + project.getTitle() +
+                ". View the project and submit your proposal.",
+                "PROJECT",
+                projectId
+        );
+
+        log.info("Client {} invited student {} for project {}", clientId, studentId, projectId);
     }
 
     private String buildProjectText(Project p) {

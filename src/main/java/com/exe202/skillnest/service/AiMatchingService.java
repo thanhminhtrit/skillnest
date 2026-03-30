@@ -6,4 +6,5 @@ import com.exe202.skillnest.dto.StudentMatchingResponse;
 public interface AiMatchingService {
     StudentMatchingResponse findBestStudents(Long projectId, Long userId, int page, int limit);
     ProjectMatchingResponse findBestProjects(Long userId, int page, int limit);
+    void inviteStudent(Long projectId, Long studentId, Long clientId);
 }
